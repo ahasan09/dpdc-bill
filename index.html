@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>DPDC Bill Check</title>
+    <meta name="description" content="Check your DPDC postpaid electricity bill in seconds. Save your customer numbers and open the official bill page with everything filled in." />
+    <meta name="theme-color" content="#2447d6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0f19" media="(prefers-color-scheme: dark)" />
+    <meta name="color-scheme" content="light dark" />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+    <meta property="og:title" content="DPDC Bill Check" />
+    <meta property="og:description" content="Check your DPDC postpaid bill in seconds. ডিপিডিসি পোস্টপেইড বিল দেখুন।" />
+    <link rel="icon" type="image/svg+xml" href="%BASE_URL%favicon.svg" />
+    <link rel="apple-touch-icon" href="%BASE_URL%favicon.svg" />
+    <link rel="manifest" href="%BASE_URL%manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script>
+      // Apply the saved theme before first paint to avoid a flash.
+      try {
+        var t = localStorage.getItem('dpdc-bill-check:theme')
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t)
+        var l = localStorage.getItem('dpdc-bill-check:lang')
+        if (l === 'bn' || l === 'en') document.documentElement.lang = l
+      } catch (e) {}
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <noscript>Please enable JavaScript to use DPDC Bill Check.</noscript>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

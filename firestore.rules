@@ -1,0 +1,23 @@
+rules_version = '2';
+
+// Each signed-in user owns exactly one small document: users/{uid}.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid} {
+      allow read, delete: if request.auth != null && request.auth.uid == uid;
+      allow create, update: if request.auth != null
+        && request.auth.uid == uid
+        && request.resource.data.keys().hasOnly(['version', 'accounts', 'defaultAccountId', 'history', 'email', 'updatedAt'])
+        && request.resource.data.accounts is list
+        && request.resource.data.accounts.size() <= 50
+        && request.resource.data.history is list
+        && request.resource.data.history.size() <= 20
+        && request.resource.data.email is string
+        && request.resource.data.email.size() <= 254;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
