@@ -13,8 +13,10 @@ export interface ParsedBill {
   customerNo: string | null
   year: number | null
   month: number | null
-  /** Total payable in taka. */
+  /** Total payable by the due date, taka. */
   amount: number | null
+  /** Total payable after the due date, taka. */
+  lateAmount: number | null
   /** Units consumed (kWh). */
   units: number | null
   /** ISO yyyy-mm-dd */
@@ -208,8 +210,14 @@ function unitsFromReadings(lines: Line[]): number | null {
   return null
 }
 
+// DPDC's own wording, tolerant of the letters its bill font drops
+// (র্ in সর্বমোট, ্য in পরিশোধযোগ্য).
+const DPDC_TOTAL = /স(?:র্)?বমোট\s*পরিশোধযোগ(?:্য)?\s*টাকা/
+const DPDC_LATE_TOTAL = /(?:পরিশোধের\s*)?শেষ\s*তারিখের\s*পর\s*পরিশোধযোগ(?:্য)?\s*স(?:র্)?বমোট\s*টাকা/
+
 // Labels, most specific first. Bangla ones are matched on skeletons (see sk).
 const AMOUNT_LABELS = [
+  sk(DPDC_TOTAL),
   /payable\s*(?:with)?in\s*(?:the\s*)?due\s*date|(?:on|by)\s*(?:or\s*before\s*)?(?:the\s*)?due\s*date/i,
   sk(/(?:নির্ধারিত|শেষ)?\s*তারিখের\s*মধ্যে|তারিখের\s*ভিতরে/),
   /net\s*payable|total\s*payable|payable\s*amount|amount\s*payable|amount\s*to\s*be\s*paid/i,
@@ -217,9 +225,15 @@ const AMOUNT_LABELS = [
   sk(/সর্বমোট|মোট\s*(?:প্রদেয়|প্রদেয়|দেয়|দেয়|পরিশোধযোগ্য|টাকা|বিল)|পরিশোধযোগ্য\s*(?:টাকা|অর্থ)?|প্রদেয়\s*(?:টাকা|অর্থ)|প্রদেয়\s*(?:টাকা|অর্থ)/),
   /(?<![a-z])total(?![a-z])/i,
 ]
+const LATE_AMOUNT_LABELS = [
+  sk(DPDC_LATE_TOTAL),
+  /payable\s*after\s*(?:the\s*)?due\s*date|after\s*(?:the\s*)?due\s*date|total\s*with\s*(?:lps|surcharge)/i,
+  sk(/তারিখের\s*পর(?!শ)|বিলম্ব\s*মাশুলসহ/),
+]
 /** Late-payment lines: the amount there includes a surcharge. */
 const LATE_PAYMENT = new RegExp(
   [
+    sk(DPDC_LATE_TOTAL).source,
     /after\s*(?:the\s*)?due|late\s*(?:payment|fee|charge)|surcharge|(?<![a-z])lps(?![a-z])/.source,
     sk(/বিলম্ব|মাশুল|সারচার্জ/).source,
     sk(/তারিখের\s*পর(?!শ)/).source, // "after the date", but not "তারিখের পরিশোধ…"
@@ -300,8 +314,9 @@ export function parseBillText(
     year: period?.year ?? null,
     month: period?.month ?? null,
     amount: labeled(lines, AMOUNT_LABELS, findAmount, LATE_PAYMENT),
+    lateAmount: labeled(lines, LATE_AMOUNT_LABELS, (t) => amountsIn(t)[0] ?? null),
     units: unitsFromReadings(lines) ?? labeled(lines, UNIT_LABELS, findUnits),
-    dueDate: labeled(lines, DUE_LABELS, findDate),
+    dueDate: labeled(lines, DUE_LABELS, findDate, LATE_PAYMENT),
     warning,
   }
 }

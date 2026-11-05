@@ -187,6 +187,9 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                 <th scope="col" className="num">
                   {t('amount')}
                 </th>
+                <th scope="col" className="num hide-sm">
+                  {t('lateAmountShort')}
+                </th>
                 <th scope="col" className="num">
                   {t('units')}
                 </th>
@@ -203,6 +206,7 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                 <tr key={b.id}>
                   <th scope="row">{formatPeriod(b.year, b.month)}</th>
                   <td className="num">{b.amount != null ? formatMoney(b.amount) : '—'}</td>
+                  <td className="num hide-sm muted">{b.lateAmount != null ? formatMoney(b.lateAmount) : '—'}</td>
                   <td className="num">{b.units != null ? formatQuantity(b.units) : '—'}</td>
                   <td className="hide-sm">{b.dueDate ? formatDate(b.dueDate) : t('noDueDate')}</td>
                   <td className="actions-cell">

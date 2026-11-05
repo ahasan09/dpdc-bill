@@ -34,7 +34,9 @@ export function HistoryCard({ data, update }: { data: UserData; update: (fn: (d:
         <p className="empty">{t('noHistory')}</p>
       ) : (
         <ul className="list">
-          {data.history.map((h) => {
+          {[...data.history]
+            .sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month) || b.checkedAt - a.checkedAt)
+            .map((h) => {
             const url = buildBillUrl({ ...h, email: data.email })
             const name = data.accounts.find((a) => a.customerNo === h.customerNo)?.nickname || h.nickname
             return (

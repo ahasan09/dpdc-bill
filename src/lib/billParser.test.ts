@@ -39,6 +39,7 @@ describe('parseBillText', () => {
       year: 2026,
       month: 9,
       amount: 2610,
+      lateAmount: null,
       units: 312,
       dueDate: '2026-10-15',
       warning: null,
@@ -51,6 +52,7 @@ describe('parseBillText', () => {
       year: 2026,
       month: 9,
       amount: 2610,
+      lateAmount: null,
       units: 312,
       dueDate: '2026-10-15',
       warning: null,
@@ -147,6 +149,7 @@ describe('Bangla text as Chrome-made PDFs return it', () => {
       year: 2026,
       month: 8,
       amount: 1980,
+      lateAmount: null,
       units: 240,
       dueDate: '2026-09-15',
       warning: null,
@@ -189,5 +192,35 @@ describe('amount payable by the due date, not after it', () => {
 
   it('does not merge unrelated amounts on one line', () => {
     expect(parseBillText('Total Amount 2,610.00 VAT 124.28').amount).toBe(2610)
+  })
+})
+
+describe("DPDC's own amount labels", () => {
+  const bill = [
+    'পরিশোধের শেষ তারিখ: 15-10-2026',
+    'সর্বমোট পরিশোধযোগ্য টাকা 2,610.00',
+    'পরিশোধের শেষ তারিখের পর পরিশোধযোগ্য সর্বমোট টাকা 2,740.50',
+  ]
+
+  it('reads the on-time and after-due-date totals and the due date', () => {
+    expect(parseBillText(bill.join('\n'))).toMatchObject({ amount: 2610, lateAmount: 2740.5, dueDate: '2026-10-15' })
+  })
+
+  it('works whatever order the lines come in', () => {
+    expect(parseBillText([bill[2], bill[1], bill[0]].join('\n'))).toMatchObject({
+      amount: 2610,
+      lateAmount: 2740.5,
+      dueDate: '2026-10-15',
+    })
+  })
+
+  it('never takes the due date from the after-due-date line', () => {
+    const text = 'পরিশোধের শেষ তারিখের পর পরিশোধযোগ্য সর্বমোট টাকা\n2,740.50\n01-11-2026\nপরিশোধের শেষ তারিখ\n15-10-2026'
+    expect(parseBillText(text).dueDate).toBe('2026-10-15')
+  })
+
+  it('copes with the letters the bill font drops (র্ and ্য)', () => {
+    const damaged = 'সবেমাট পিরেশাধেযাগ টাকা 2,610.00\nপিরেশােধর শষ তািরেখর পর পিরেশাধেযাগ সবেমাট টাকা 2,740.50'
+    expect(parseBillText(damaged)).toMatchObject({ amount: 2610, lateAmount: 2740.5 })
   })
 })

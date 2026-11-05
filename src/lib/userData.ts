@@ -23,8 +23,10 @@ export interface BillSummary {
   customerNo: string
   year: number
   month: number
-  /** Total payable, taka */
+  /** Total payable by the due date, taka */
   amount: number | null
+  /** Total payable after the due date (with surcharge), taka. Optional. */
+  lateAmount: number | null
   /** kWh */
   units: number | null
   /** yyyy-mm-dd */
@@ -249,6 +251,7 @@ export function sanitizeUserData(raw: unknown): UserData {
         year: num(b.year),
         month: num(b.month),
         amount: numOrNull(b.amount),
+        lateAmount: numOrNull(b.lateAmount),
         units: numOrNull(b.units),
         dueDate: /^\d{4}-\d{2}-\d{2}$/.test(str(b.dueDate)) ? str(b.dueDate) : null,
         fileName: str(b.fileName).slice(0, 200),

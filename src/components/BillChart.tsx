@@ -126,6 +126,11 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
           {hovered.bill ? (
             <>
               <span>{hovered.bill.amount != null ? formatMoney(hovered.bill.amount) : '—'}</span>
+              {hovered.bill.lateAmount != null && (
+                <span className="chart__tip-muted">
+                  {t('lateAmountShort')}: {formatMoney(hovered.bill.lateAmount)}
+                </span>
+              )}
               {hovered.bill.units != null && <span>{formatQuantity(hovered.bill.units)} kWh</span>}
             </>
           ) : (

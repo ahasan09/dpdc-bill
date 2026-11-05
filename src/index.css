@@ -1622,6 +1622,10 @@ select.input {
   fill: transparent;
 }
 
+.chart__tip-muted {
+  color: var(--text-3);
+}
+
 .chart__tip {
   position: absolute;
   transform: translate(-50%, -100%);

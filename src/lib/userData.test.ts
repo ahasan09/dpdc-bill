@@ -92,6 +92,7 @@ const bill = (customerNo: string, year: number, month: number, amount: number | 
   year,
   month,
   amount,
+  lateAmount: null,
   units: 50,
   dueDate: null,
   fileName: 'test.pdf',

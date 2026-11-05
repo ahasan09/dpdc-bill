@@ -14,6 +14,7 @@ interface Form {
   year: number
   month: number
   amount: string
+  lateAmount: string
   units: string
   dueDate: string
 }
@@ -40,7 +41,7 @@ const readErrors: Record<PdfReadError['reason'], MessageKey> = {
 function blankForm(data: UserData, customerNo?: string): Form {
   const last = shiftPeriod(currentPeriod(), -1)
   const no = customerNo ?? data.accounts.find((a) => a.id === data.defaultAccountId)?.customerNo ?? ''
-  return { customerNo: no, year: last.year, month: last.month, amount: '', units: '', dueDate: '' }
+  return { customerNo: no, year: last.year, month: last.month, amount: '', lateAmount: '', units: '', dueDate: '' }
 }
 
 export function BillImportDialog({
@@ -82,6 +83,7 @@ export function BillImportDialog({
             year: b.year,
             month: b.month,
             amount: b.amount !== null ? String(b.amount) : '',
+            lateAmount: b.lateAmount !== null ? String(b.lateAmount) : '',
             units: b.units !== null ? String(b.units) : '',
             dueDate: b.dueDate ?? '',
           },
@@ -131,6 +133,7 @@ export function BillImportDialog({
               year: parsed.year ?? fallback.year,
               month: parsed.month ?? fallback.month,
               amount: parsed.amount !== null ? String(parsed.amount) : '',
+              lateAmount: parsed.lateAmount !== null ? String(parsed.lateAmount) : '',
               units: parsed.units !== null ? String(parsed.units) : '',
               dueDate: parsed.dueDate ?? '',
             },
@@ -167,6 +170,7 @@ export function BillImportDialog({
         year: it.form.year,
         month: it.form.month,
         amount: Number(it.form.amount),
+        lateAmount: Number(it.form.lateAmount) > 0 ? Number(it.form.lateAmount) : null,
         units: it.form.units.trim() !== '' && Number.isFinite(Number(it.form.units)) ? Number(it.form.units) : null,
         dueDate: /^\d{4}-\d{2}-\d{2}$/.test(it.form.dueDate) ? it.form.dueDate : null,
         fileName: it.fileName || editing?.fileName || '',
@@ -361,6 +365,19 @@ function ImportRow({
           ) : miss('amount') ? (
             <p className="hint hint--warn">{t('notFound')}</p>
           ) : null}
+        </div>
+
+        <div className="field">
+          <label className="label label--sub" htmlFor={`${id}-late`}>
+            {t('lateAmount')}
+          </label>
+          <input
+            id={`${id}-late`}
+            className="input mono"
+            inputMode="decimal"
+            value={f.lateAmount}
+            onChange={(e) => onChange({ lateAmount: e.target.value.replace(/[^\d.]/g, '') })}
+          />
         </div>
 
         <div className="field">
