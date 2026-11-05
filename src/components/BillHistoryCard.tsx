@@ -211,7 +211,10 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
             <tbody>
               {bills.map((b) => (
                 <tr key={b.id}>
-                  <th scope="row">{formatPeriod(b.year, b.month)}</th>
+                  <th scope="row">
+                    <span className="hide-xs">{formatPeriod(b.year, b.month)}</span>
+                    <span className="show-xs">{shortPeriod(b)}</span>
+                  </th>
                   <td className="num">{b.amount != null ? formatMoney(b.amount) : '—'}</td>
                   <td className="num hide-sm muted">{b.lateAmount != null ? formatMoney(b.lateAmount) : '—'}</td>
                   <td className="num">{b.units != null ? formatQuantity(b.units) : '—'}</td>

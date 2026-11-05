@@ -305,6 +305,7 @@ button {
   padding: 14px;
   box-shadow: var(--shadow);
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* content never grows wider than the card */
   gap: 10px;
   min-width: 0; /* let long content shrink instead of widening the page */
 }
@@ -375,6 +376,7 @@ button {
 /* ---------- Forms ---------- */
 .stack {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 14px;
 }
 
@@ -866,15 +868,56 @@ select.input {
   flex-wrap: wrap;
 }
 
-/* Wider screens: main button and copy/share on one row. */
-@media (min-width: 600px) {
-  .actions {
-    display: flex;
-    align-items: center;
+/* Main button and copy/share always on one row (icon-only on phones). */
+.actions {
+  display: flex;
+  align-items: center;
+}
+
+.actions .btn--primary {
+  flex: 1;
+  min-width: 0;
+  white-space: normal; /* long Bangla text may wrap on the narrowest phones */
+  text-align: center;
+  line-height: 1.25;
+}
+
+.actions__secondary {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 520px) {
+  .actions__secondary .btn {
+    width: 42px;
+    padding: 0;
   }
-  .actions .btn--primary {
-    flex: 1;
-  }
+}
+
+/* Check a bill: tighter than other forms. */
+.card--primary > .stack {
+  gap: 10px;
+}
+
+.card--primary .details {
+  padding-top: 6px;
+}
+
+.save-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.save-row .checkbox {
+  flex: none;
+  white-space: nowrap;
+}
+
+.save-row__nick {
+  flex: 1;
+  min-width: 0;
+  min-height: 36px;
 }
 
 .spinner {
@@ -1802,4 +1845,28 @@ select.input {
 .alert--warn {
   background: var(--amber-soft);
   color: var(--warn);
+}
+
+/* Small phones: short months, wrapping headings, tighter cells in the bill table. */
+.show-xs {
+  display: none;
+}
+
+@media (max-width: 420px) {
+  .hide-xs {
+    display: none;
+  }
+  .show-xs {
+    display: inline;
+  }
+  .bill-table thead th {
+    white-space: normal;
+    vertical-align: bottom;
+    line-height: 1.2;
+  }
+  .bill-table th,
+  .bill-table td {
+    padding-left: 4px;
+    padding-right: 4px;
+  }
 }

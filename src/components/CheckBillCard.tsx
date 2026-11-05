@@ -244,18 +244,17 @@ export function CheckBillCard({
 
               {!existing && (
                 <>
-                  <label className="checkbox">
-                    <input type="checkbox" checked={saveNumber} onChange={(e) => setSaveNumber(e.target.checked)} />
-                    <span>{t('saveThisNumber')}</span>
-                  </label>
-                  {saveNumber && (
-                    <div className="field">
-                      <label htmlFor={ids.nick} className="label label--sub">
-                        {t('nickname')}
-                      </label>
+                  {/* "☑ Save as [nickname]" on one row */}
+                  <div className="save-row">
+                    <label className="checkbox" title={t('saveThisNumber')}>
+                      <input type="checkbox" checked={saveNumber} onChange={(e) => setSaveNumber(e.target.checked)} />
+                      <span>{saveNumber ? t('saveAs') : t('saveThisNumber')}</span>
+                    </label>
+                    {saveNumber && (
                       <input
                         id={ids.nick}
-                        className="input"
+                        className="input save-row__nick"
+                        aria-label={t('nickname')}
                         placeholder={t('nicknamePlaceholder')}
                         value={nickname}
                         maxLength={40}
@@ -263,8 +262,8 @@ export function CheckBillCard({
                         onChange={(e) => setNickname(e.target.value)}
                         onKeyDown={onEnter}
                       />
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </>
               )}
             </div>
@@ -273,7 +272,7 @@ export function CheckBillCard({
 
         {/* Bill type */}
         <fieldset className="field">
-          <legend className="label">{t('billType')}</legend>
+          <legend className="sr-only">{t('billType')}</legend>
           <div className="segmented" role="radiogroup" aria-label={t('billType')}>
             {BILL_TYPES.map((type) => (
               <label key={type} className={`segmented__item ${billType === type ? 'is-on' : ''}`}>
@@ -291,12 +290,12 @@ export function CheckBillCard({
               </label>
             ))}
           </div>
-          <p className="hint">{t(`bt_${billType}_desc` as MessageKey)}</p>
+          {billType !== 'current' && <p className="hint">{t(`bt_${billType}_desc` as MessageKey)}</p>}
         </fieldset>
 
         {/* Period */}
         <fieldset className="field">
-          <legend className="label">{t('billMonth')}</legend>
+          <legend className="sr-only">{t('billMonth')}</legend>
           <div className="period">
             {[
               { p: lastMonth, label: t('lastMonth') },
@@ -401,12 +400,12 @@ export function CheckBillCard({
             <Icon name="external" />
           </a>
           <div className="actions__secondary">
-            <button type="button" className="btn btn--ghost" onClick={copyLink}>
-              <Icon name="copy" /> {t('copyLink')}
+            <button type="button" className="btn btn--ghost" onClick={copyLink} aria-label={t('copyLink')} title={t('copyLink')}>
+              <Icon name="copy" /> <span className="hide-sm">{t('copyLink')}</span>
             </button>
             {canShare && (
-              <button type="button" className="btn btn--ghost" onClick={share}>
-                <Icon name="share" /> {t('share')}
+              <button type="button" className="btn btn--ghost" onClick={share} aria-label={t('share')} title={t('share')}>
+                <Icon name="share" /> <span className="hide-sm">{t('share')}</span>
               </button>
             )}
           </div>
