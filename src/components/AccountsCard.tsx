@@ -4,6 +4,7 @@ import {
   CUSTOMER_NO_MIN,
   buildBillUrl,
   currentPeriod,
+  shiftPeriod,
   normalizeCustomerNo,
   validateCustomerNo,
 } from '../lib/dpdc'
@@ -66,7 +67,7 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
         <ul className="list">
           {data.accounts.map((a) => {
             const isDefault = a.id === data.defaultAccountId
-            const now = currentPeriod()
+            const now = shiftPeriod(currentPeriod(), -1) // last month's e-bill
             const url = buildBillUrl({ billType: 'current', ...now, customerNo: a.customerNo, email: data.email })
             return (
               <li key={a.id} className="list__item">
@@ -112,7 +113,7 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={`${t('bt_current')} · ${t('thisMonth')}`}
+                    title={`${t('bt_current')} · ${t('lastMonth')}`}
                     onClick={(e) => {
                       openBillFromLink(e, url)
                       update((d) =>

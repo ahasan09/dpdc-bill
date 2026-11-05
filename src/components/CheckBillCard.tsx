@@ -53,7 +53,7 @@ export function CheckBillCard({
   const [nickname, setNickname] = useState('')
   const [saveNumber, setSaveNumber] = useState(true)
   const [billType, setBillType] = useState<BillType>('current')
-  const [period, setPeriod] = useState<Period>(() => currentPeriod())
+  const [period, setPeriod] = useState<Period>(() => shiftPeriod(currentPeriod(), -1))
   const [email, setEmailInput] = useState(data.email)
   const [touched, setTouched] = useState(false)
   const [opened, setOpened] = useState<{ url: string; mode: OpenMode } | null>(null)
@@ -86,8 +86,8 @@ export function CheckBillCard({
     [valid, billType, period, customerNo, email],
   )
 
-  const now = currentPeriod()
-  const lastMonth = shiftPeriod(now, -1)
+  // Bills cover the previous month, so "Last month" is the default and the one quick pick.
+  const lastMonth = shiftPeriod(currentPeriod(), -1)
   const samePeriod = (a: Period, b: Period) => a.year === b.year && a.month === b.month
   const years = availableYears()
 
@@ -299,7 +299,6 @@ export function CheckBillCard({
           <legend className="label">{t('billMonth')}</legend>
           <div className="period">
             {[
-              { p: now, label: t('thisMonth') },
               { p: lastMonth, label: t('lastMonth') },
             ].map(({ p, label }) => (
               <button
