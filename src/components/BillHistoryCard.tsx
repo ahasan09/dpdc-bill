@@ -19,7 +19,8 @@ import { useToast } from './Toast'
 type Update = (fn: (d: UserData) => UserData) => void
 
 export function BillHistoryCard({ data, update }: { data: UserData; update: Update }) {
-  const { t, formatMoney, formatQuantity, formatPeriod, formatDate } = useI18n()
+  const { t, formatMoney, formatQuantity, formatPeriod, formatDate, shortMonth, formatNumber } = useI18n()
+  const shortPeriod = (b: { year: number; month: number }) => `${shortMonth(b.month)} ${formatNumber(b.year)}`
   const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
   const [request, setRequest] = useState<File[] | 'manual' | { edit: BillSummary } | null>(null)
@@ -102,8 +103,14 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
           {t('billsTitle')}
         </h2>
         <div className="card__tools">
-          <button type="button" className="btn btn--ghost btn--sm" onClick={() => setRequest('manual')}>
-            <Icon name="plus" size={15} /> {t('addManually')}
+          <button
+            type="button"
+            className="btn btn--ghost btn--sm"
+            title={t('addManually')}
+            aria-label={t('addManually')}
+            onClick={() => setRequest('manual')}
+          >
+            <Icon name="plus" size={15} /> <span className="hide-sm">{t('addManually')}</span>
           </button>
           <button type="button" className="btn btn--soft btn--sm" onClick={() => fileRef.current?.click()}>
             <Icon name="upload" size={15} /> {t('uploadBills')}
@@ -134,7 +141,7 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
       ) : (
         <>
           {numbers.length > 1 && (
-            <div className="chips" role="tablist" aria-label={t('savedAccounts')}>
+            <div className="chips chips--tight" role="tablist" aria-label={t('savedAccounts')}>
               {numbers.map((no) => (
                 <button
                   key={no}
@@ -150,23 +157,26 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
             </div>
           )}
 
-          <div className="stats">
+          <dl className="stats">
             <div className="stat">
-              <span className="stat__label">{t('latestBill')}</span>
-              <span className="stat__value">{latest?.amount != null ? formatMoney(latest.amount) : '—'}</span>
-              <span className="stat__meta">{latest && formatPeriod(latest.year, latest.month)}</span>
+              <dt className="stat__label">{t('latestBill')}</dt>
+              <dd className="stat__value">
+                {latest?.amount != null ? formatMoney(latest.amount) : '—'}
+                {latest && <span className="stat__meta">{shortPeriod(latest)}</span>}
+              </dd>
             </div>
             <div className="stat">
-              <span className="stat__label">{t('average', { n: recent.length })}</span>
-              <span className="stat__value">{average !== null ? formatMoney(Math.round(average)) : '—'}</span>
-              <span className="stat__meta">{numbers.length === 1 ? nameFor(selected!) : ' '}</span>
+              <dt className="stat__label">{t('average', { n: recent.length })}</dt>
+              <dd className="stat__value">{average !== null ? formatMoney(Math.round(average)) : '—'}</dd>
             </div>
             <div className="stat">
-              <span className="stat__label">{t('highest')}</span>
-              <span className="stat__value">{highest?.amount != null ? formatMoney(highest.amount) : '—'}</span>
-              <span className="stat__meta">{highest && formatPeriod(highest.year, highest.month)}</span>
+              <dt className="stat__label">{t('highest')}</dt>
+              <dd className="stat__value">
+                {highest?.amount != null ? formatMoney(highest.amount) : '—'}
+                {highest && <span className="stat__meta">{shortPeriod(highest)}</span>}
+              </dd>
             </div>
-          </div>
+          </dl>
 
           {recent.length > 1 && <BillChart bills={bills} />}
 
@@ -219,9 +229,6 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
               ))}
             </tbody>
           </table>
-          <p className="hint">
-            <Icon name="shield" size={13} /> {t('billsPrivacy')}
-          </p>
         </>
       )}
 

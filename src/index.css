@@ -1520,41 +1520,52 @@ select.input {
   pointer-events: none;
 }
 
+/* One slim strip: three figures split by hairlines. */
 .stats {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+  margin: 0;
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
 }
 
 .stat {
   display: grid;
-  gap: 1px;
-  padding: 8px 10px;
-  border-radius: var(--radius-sm);
-  background: var(--surface-2);
+  gap: 0;
+  padding: 6px 10px;
   min-width: 0;
 }
 
+.stat + .stat {
+  border-left: 1px solid var(--border);
+}
+
 .stat__label {
-  font-size: 12px;
+  font-size: 11.5px;
   color: var(--text-3);
   font-weight: 500;
-}
-
-.stat__value {
-  font-size: 1.15rem;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  overflow-wrap: anywhere;
-}
-
-.stat__meta {
-  font-size: 12px;
-  color: var(--text-2);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  min-height: 1.4em;
+}
+
+.stat__value {
+  margin: 0;
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  font-size: 1rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  min-width: 0;
+}
+
+.stat__meta {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-3);
+  white-space: nowrap;
 }
 
 .chart {
@@ -1630,19 +1641,20 @@ select.input {
 .bill-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 14px;
+  font-size: 13.5px;
 }
 
 .bill-table th,
 .bill-table td {
-  padding: 5px 6px;
+  padding: 2px 6px;
   text-align: left;
   border-bottom: 1px solid var(--border);
   white-space: nowrap;
 }
 
 .bill-table thead th {
-  font-size: 12px;
+  padding-bottom: 4px;
+  font-size: 11.5px;
   font-weight: 600;
   color: var(--text-3);
 }
@@ -1666,8 +1678,8 @@ select.input {
 }
 
 .actions-cell .icon-btn {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
 }
 
 @media (max-width: 520px) {
@@ -1675,8 +1687,22 @@ select.input {
     display: none;
   }
   .stat__value {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
+}
+
+.chips--tight {
+  gap: 6px;
+}
+
+.chips--tight .chip {
+  min-height: 28px;
+  padding: 2px 11px;
+  font-size: 13.5px;
+}
+
+.bills {
+  gap: 8px;
 }
 
 /* ---------- Bill import dialog ---------- */

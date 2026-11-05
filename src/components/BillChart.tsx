@@ -3,8 +3,8 @@ import { shiftPeriod } from '../lib/dpdc'
 import { useI18n } from '../lib/i18n'
 import type { BillSummary } from '../lib/userData'
 
-const HEIGHT = 168
-const PAD = { top: 22, right: 4, bottom: 24, left: 44 }
+const HEIGHT = 124
+const PAD = { top: 18, right: 4, bottom: 20, left: 40 }
 const MONTHS = 12
 
 interface Slot {
@@ -41,7 +41,7 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
 
   const amounts = slots.map((s) => s.bill?.amount ?? 0)
   const max = Math.max(...amounts, 1)
-  const step = niceStep(max / 3)
+  const step = niceStep(max / 2)
   const top = Math.ceil(max / step) * step
   const ticks = Array.from({ length: Math.round(top / step) + 1 }, (_, i) => i * step)
 
@@ -106,7 +106,7 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
                   {formatMoney(Math.round(amount))}
                 </text>
               ) : null}
-              <text className="chart__tick" x={cx} y={HEIGHT - PAD.bottom + 15} textAnchor="middle">
+              <text className="chart__tick" x={cx} y={HEIGHT - PAD.bottom + 14} textAnchor="middle">
                 {band < 30 ? shortMonth(s.month).slice(0, 1) : shortMonth(s.month)}
                 {showYear && band >= 30 ? ` ${formatNumber(s.year).slice(-2)}` : ''}
               </text>
