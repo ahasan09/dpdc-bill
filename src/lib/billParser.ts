@@ -19,6 +19,10 @@ export interface ParsedBill {
   lateAmount: number | null
   /** Units consumed (kWh). */
   units: number | null
+  /** বর্তমান রিডিং — meter reading at the end of the period. */
+  presentReading: number | null
+  /** পূর্ববর্তী রিডিং — meter reading at the start of the period. */
+  previousReading: number | null
   /** ISO yyyy-mm-dd */
   dueDate: string | null
   /** Why the text could not be read well, if we can tell. */
@@ -163,7 +167,21 @@ function skeletonOf(line: string): { s: string; map: number[] } {
   return { s, map }
 }
 /** Writes a label regex normally; matching happens on skeletons. */
-const sk = (re: RegExp) => new RegExp(re.source.replace(MARKS, ''), re.flags)
+/**
+ * Turns a normally spelled Bangla label into a skeleton pattern that survives
+ * what bill PDFs do to it:
+ * - reph (র্) in place, moved after the next letter, or dropped: সর্বমোট → সর্বমোট / সবর্মোট / সবমোট
+ * - ya-phala (্য) dropped: পরিশোধযোগ্য → পরিশোধযোগ
+ * - vowel signs dropped or reordered (all marks are ignored)
+ */
+const sk = (re: RegExp) =>
+  new RegExp(
+    re.source
+      .replace(/র্([\u0995-\u09B9\u09DC-\u09DF])/g, 'র?$1র?')
+      .replace(/্য/g, 'য?')
+      .replace(MARKS, ''),
+    re.flags,
+  )
 
 type Finder<T> = (text: string) => T | null
 type Line = { text: string; s: string; map: number[] }
@@ -188,11 +206,17 @@ function labeled<T>(lines: Line[], labels: RegExp[], find: Finder<T>, skip?: Reg
   return null
 }
 
+interface Readings {
+  present: number
+  previous: number
+  units: number
+}
+
 /**
- * Units from the meter readings: three numbers near a "reading" label where
+ * Meter readings: three numbers near a "reading" label where
  * present − previous = consumed (604 − 417 = 187). Independent of layout.
  */
-function unitsFromReadings(lines: Line[]): number | null {
+function readingsFrom(lines: Line[]): Readings | null {
   for (let i = 0; i < lines.length; i++) {
     if (!/reading|রিডিং/i.test(lines[i].text) && !/রড(?![\u0995-\u09B9])/.test(lines[i].s)) continue
     const nums: number[] = []
@@ -201,19 +225,31 @@ function unitsFromReadings(lines: Line[]): number | null {
         nums.push(Number(m[1].replace(/,/g, '') + (m[2] ?? '')))
       }
     }
-    const ok = (a: number, b: number, c: number) => a > b && c > 0 && Math.abs(a - b - c) < 0.01
-    for (let j = 0; j + 2 < nums.length; j++) if (ok(nums[j], nums[j + 1], nums[j + 2])) return nums[j + 2]
+    // Bills print present-then-previous or previous-then-present; units come last.
+    const match = (x: number, y: number, c: number): Readings | null => {
+      if (c <= 0) return null
+      if (x > y && Math.abs(x - y - c) < 0.01) return { present: x, previous: y, units: c }
+      if (y > x && Math.abs(y - x - c) < 0.01) return { present: y, previous: x, units: c }
+      return null
+    }
+    for (let j = 0; j + 2 < nums.length; j++) {
+      const r = match(nums[j], nums[j + 1], nums[j + 2])
+      if (r) return r
+    }
     for (let j = 0; j < nums.length; j++)
       for (let k = j + 1; k < nums.length; k++)
-        for (let m = k + 1; m < nums.length; m++) if (ok(nums[j], nums[k], nums[m])) return nums[m]
+        for (let m = k + 1; m < nums.length; m++) {
+          const r = match(nums[j], nums[k], nums[m])
+          if (r) return r
+        }
   }
   return null
 }
 
 // DPDC's own wording, tolerant of the letters its bill font drops
 // (র্ in সর্বমোট, ্য in পরিশোধযোগ্য).
-const DPDC_TOTAL = /স(?:র্)?বমোট\s*পরিশোধযোগ(?:্য)?\s*টাকা/
-const DPDC_LATE_TOTAL = /(?:পরিশোধের\s*)?শেষ\s*তারিখের\s*পর\s*পরিশোধযোগ(?:্য)?\s*স(?:র্)?বমোট\s*টাকা/
+const DPDC_TOTAL = /সর্বমোট\s*পরিশোধযোগ্য\s*টাকা/
+const DPDC_LATE_TOTAL = /(?:পরিশোধের\s*)?শেষ\s*তারিখের\s*পর\s*(?:পরিশোধযোগ্য\s*)?(?:সর্বমোট|মোট)\s*টাকা/
 
 // Labels, most specific first. Bangla ones are matched on skeletons (see sk).
 const AMOUNT_LABELS = [
@@ -221,8 +257,11 @@ const AMOUNT_LABELS = [
   /payable\s*(?:with)?in\s*(?:the\s*)?due\s*date|(?:on|by)\s*(?:or\s*before\s*)?(?:the\s*)?due\s*date/i,
   sk(/(?:নির্ধারিত|শেষ)?\s*তারিখের\s*মধ্যে|তারিখের\s*ভিতরে/),
   /net\s*payable|total\s*payable|payable\s*amount|amount\s*payable|amount\s*to\s*be\s*paid/i,
+  // Payable totals before general ones: "মাসিক মোট বিল" is the unrounded monthly
+  // total (1607.55), not what is payable (1608.00).
+  sk(/সর্বমোট|পরিশোধযোগ্য\s*(?:টাকা|অর্থ)?|প্রদেয়\s*(?:টাকা|অর্থ)|প্রদেয়\s*(?:টাকা|অর্থ)|মোট\s*(?:প্রদেয়|প্রদেয়|দেয়|দেয়|পরিশোধযোগ্য)/),
   /grand\s*total|total\s*bill(?:\s*amount)?|total\s*amount|bill\s*amount/i,
-  sk(/সর্বমোট|মোট\s*(?:প্রদেয়|প্রদেয়|দেয়|দেয়|পরিশোধযোগ্য|টাকা|বিল)|পরিশোধযোগ্য\s*(?:টাকা|অর্থ)?|প্রদেয়\s*(?:টাকা|অর্থ)|প্রদেয়\s*(?:টাকা|অর্থ)/),
+  sk(/মোট\s*(?:টাকা|বিল)/),
   /(?<![a-z])total(?![a-z])/i,
 ]
 const LATE_AMOUNT_LABELS = [
@@ -240,6 +279,15 @@ const LATE_PAYMENT = new RegExp(
   ].join('|'),
   'i',
 )
+// Fallback when no "consumed" number is printed. Tolerates damage seen on real
+// bills: "তমান রিডিং" (বর্তমান), "পূ ববতী রিডিং" (পূর্ববর্তী).
+const PRESENT_LABELS = [/present\s*(?:meter\s*)?reading|current\s*reading/i, sk(/ব?র্তমান\s*রিডিং/)]
+const PREVIOUS_LABELS = [/previous\s*(?:meter\s*)?reading|last\s*reading/i, sk(/পূর্ব(?:বর্তী)?\s*রিডিং/)]
+const readingValue: Finder<number> = (t) => {
+  const m = /(?<![\d./-])(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?![\d/-])/.exec(t)
+  return m ? Number(m[1].replace(/,/g, '') + (m[2] ?? '')) : null
+}
+
 const UNIT_LABELS = [
   /(?:units?\s*consumed|consumed\s*units?|total\s*(?:units?|consumption)|net\s*units?|billed\s*units?|energy\s*consumed|consumption)/i,
   sk(/ব্যবহৃত\s*(?:ইউনিট|বিদ্যুৎ)|ববত\s*ইউনিট|মোট\s*ইউনিট|বিলকৃত\s*ইউনিট|ইউনিট/),
@@ -307,6 +355,14 @@ export function parseBillText(
       ? { year: fileYear, month: fileMonth }
       : (labeled(lines, MONTH_LABELS, findPeriod) ?? findPeriod(lines.slice(0, 40).map((l) => l.text).join('\n')))
 
+  const readings = readingsFrom(lines)
+  const present = readings ? null : labeled(lines, PRESENT_LABELS, readingValue)
+  const previous = readings ? null : labeled(lines, PREVIOUS_LABELS, readingValue)
+  const units =
+    readings?.units ??
+    labeled(lines, UNIT_LABELS, findUnits) ??
+    (present !== null && previous !== null && present >= previous ? present - previous : null)
+
   const warning = lines.length === 0 ? 'noText' : looksLikeLegacyBangla(text) ? 'unreadableBangla' : null
 
   return {
@@ -315,7 +371,9 @@ export function parseBillText(
     month: period?.month ?? null,
     amount: labeled(lines, AMOUNT_LABELS, findAmount, LATE_PAYMENT),
     lateAmount: labeled(lines, LATE_AMOUNT_LABELS, (t) => amountsIn(t)[0] ?? null),
-    units: unitsFromReadings(lines) ?? labeled(lines, UNIT_LABELS, findUnits),
+    units,
+    presentReading: readings?.present ?? present,
+    previousReading: readings?.previous ?? previous,
     dueDate: labeled(lines, DUE_LABELS, findDate, LATE_PAYMENT),
     warning,
   }

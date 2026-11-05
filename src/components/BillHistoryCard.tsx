@@ -21,6 +21,10 @@ type Update = (fn: (d: UserData) => UserData) => void
 export function BillHistoryCard({ data, update }: { data: UserData; update: Update }) {
   const { t, formatMoney, formatQuantity, formatPeriod, formatDate, shortMonth, formatNumber } = useI18n()
   const shortPeriod = (b: { year: number; month: number }) => `${shortMonth(b.month)} ${formatNumber(b.year)}`
+  const readingText = (b: BillSummary) =>
+    b.previousReading != null || b.presentReading != null
+      ? `${b.previousReading != null ? formatQuantity(b.previousReading) : '—'} → ${b.presentReading != null ? formatQuantity(b.presentReading) : '—'}`
+      : '—'
   const toast = useToast()
   const fileRef = useRef<HTMLInputElement>(null)
   const [request, setRequest] = useState<File[] | 'manual' | { edit: BillSummary } | null>(null)
@@ -193,6 +197,9 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                 <th scope="col" className="num">
                   {t('units')}
                 </th>
+                <th scope="col" className="num hide-sm">
+                  {t('meterReading')}
+                </th>
                 <th scope="col" className="hide-sm">
                   {t('dueDate')}
                 </th>
@@ -208,6 +215,7 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                   <td className="num">{b.amount != null ? formatMoney(b.amount) : '—'}</td>
                   <td className="num hide-sm muted">{b.lateAmount != null ? formatMoney(b.lateAmount) : '—'}</td>
                   <td className="num">{b.units != null ? formatQuantity(b.units) : '—'}</td>
+                  <td className="num hide-sm muted">{readingText(b)}</td>
                   <td className="hide-sm">{b.dueDate ? formatDate(b.dueDate) : t('noDueDate')}</td>
                   <td className="actions-cell">
                     <button

@@ -29,6 +29,10 @@ export interface BillSummary {
   lateAmount: number | null
   /** kWh */
   units: number | null
+  /** বর্তমান রিডিং */
+  presentReading: number | null
+  /** পূর্ববর্তী রিডিং */
+  previousReading: number | null
   /** yyyy-mm-dd */
   dueDate: string | null
   fileName: string
@@ -253,6 +257,8 @@ export function sanitizeUserData(raw: unknown): UserData {
         amount: numOrNull(b.amount),
         lateAmount: numOrNull(b.lateAmount),
         units: numOrNull(b.units),
+        presentReading: numOrNull(b.presentReading),
+        previousReading: numOrNull(b.previousReading),
         dueDate: /^\d{4}-\d{2}-\d{2}$/.test(str(b.dueDate)) ? str(b.dueDate) : null,
         fileName: str(b.fileName).slice(0, 200),
         addedAt: num(b.addedAt),

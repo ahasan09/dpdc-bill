@@ -16,6 +16,8 @@ interface Form {
   amount: string
   lateAmount: string
   units: string
+  presentReading: string
+  previousReading: string
   dueDate: string
 }
 
@@ -38,10 +40,27 @@ const readErrors: Record<PdfReadError['reason'], MessageKey> = {
   broken: 'errBroken',
 }
 
+const optionalNumber = (v: string) => (v.trim() !== '' && Number.isFinite(Number(v)) ? Number(v) : null)
+
+/** Typing a reading fills in units (present − previous) while units is empty or was derived. */
+function withUnits(f: Form, patch: Partial<Form>): Partial<Form> {
+  const next = { ...f, ...patch }
+  const pres = optionalNumber(next.presentReading)
+  const prev = optionalNumber(next.previousReading)
+  const oldDerived =
+    optionalNumber(f.presentReading) !== null && optionalNumber(f.previousReading) !== null
+      ? String(Math.round((Number(f.presentReading) - Number(f.previousReading)) * 100) / 100)
+      : null
+  if (pres !== null && prev !== null && pres >= prev && (f.units === '' || f.units === oldDerived)) {
+    return { ...patch, units: String(Math.round((pres - prev) * 100) / 100) }
+  }
+  return patch
+}
+
 function blankForm(data: UserData, customerNo?: string): Form {
   const last = shiftPeriod(currentPeriod(), -1)
   const no = customerNo ?? data.accounts.find((a) => a.id === data.defaultAccountId)?.customerNo ?? ''
-  return { customerNo: no, year: last.year, month: last.month, amount: '', lateAmount: '', units: '', dueDate: '' }
+  return { customerNo: no, year: last.year, month: last.month, amount: '', lateAmount: '', units: '', presentReading: '', previousReading: '', dueDate: '' }
 }
 
 export function BillImportDialog({
@@ -85,6 +104,8 @@ export function BillImportDialog({
             amount: b.amount !== null ? String(b.amount) : '',
             lateAmount: b.lateAmount !== null ? String(b.lateAmount) : '',
             units: b.units !== null ? String(b.units) : '',
+            presentReading: b.presentReading !== null ? String(b.presentReading) : '',
+            previousReading: b.previousReading !== null ? String(b.previousReading) : '',
             dueDate: b.dueDate ?? '',
           },
         },
@@ -135,6 +156,8 @@ export function BillImportDialog({
               amount: parsed.amount !== null ? String(parsed.amount) : '',
               lateAmount: parsed.lateAmount !== null ? String(parsed.lateAmount) : '',
               units: parsed.units !== null ? String(parsed.units) : '',
+              presentReading: parsed.presentReading !== null ? String(parsed.presentReading) : '',
+              previousReading: parsed.previousReading !== null ? String(parsed.previousReading) : '',
               dueDate: parsed.dueDate ?? '',
             },
           }
@@ -171,6 +194,8 @@ export function BillImportDialog({
         month: it.form.month,
         amount: Number(it.form.amount),
         lateAmount: Number(it.form.lateAmount) > 0 ? Number(it.form.lateAmount) : null,
+        presentReading: optionalNumber(it.form.presentReading),
+        previousReading: optionalNumber(it.form.previousReading),
         units: it.form.units.trim() !== '' && Number.isFinite(Number(it.form.units)) ? Number(it.form.units) : null,
         dueDate: /^\d{4}-\d{2}-\d{2}$/.test(it.form.dueDate) ? it.form.dueDate : null,
         fileName: it.fileName || editing?.fileName || '',
@@ -392,6 +417,32 @@ function ImportRow({
             onChange={(e) => onChange({ units: e.target.value.replace(/[^\d.]/g, '') })}
           />
           {miss('units') && !f.units && <p className="hint hint--warn">{t('notFound')}</p>}
+        </div>
+
+        <div className="field">
+          <label className="label label--sub" htmlFor={`${id}-prev`}>
+            {t('previousReading')}
+          </label>
+          <input
+            id={`${id}-prev`}
+            className="input mono"
+            inputMode="decimal"
+            value={f.previousReading}
+            onChange={(e) => onChange(withUnits(f, { previousReading: e.target.value.replace(/[^\d.]/g, '') }))}
+          />
+        </div>
+
+        <div className="field">
+          <label className="label label--sub" htmlFor={`${id}-pres`}>
+            {t('presentReading')}
+          </label>
+          <input
+            id={`${id}-pres`}
+            className="input mono"
+            inputMode="decimal"
+            value={f.presentReading}
+            onChange={(e) => onChange(withUnits(f, { presentReading: e.target.value.replace(/[^\d.]/g, '') }))}
+          />
         </div>
 
         <div className="field">

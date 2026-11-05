@@ -41,6 +41,8 @@ describe('parseBillText', () => {
       amount: 2610,
       lateAmount: null,
       units: 312,
+      presentReading: 10512,
+      previousReading: 10200,
       dueDate: '2026-10-15',
       warning: null,
     })
@@ -54,6 +56,8 @@ describe('parseBillText', () => {
       amount: 2610,
       lateAmount: null,
       units: 312,
+      presentReading: null,
+      previousReading: null,
       dueDate: '2026-10-15',
       warning: null,
     })
@@ -151,6 +155,8 @@ describe('Bangla text as Chrome-made PDFs return it', () => {
       amount: 1980,
       lateAmount: null,
       units: 240,
+      presentReading: null,
+      previousReading: null,
       dueDate: '2026-09-15',
       warning: null,
     })
@@ -222,5 +228,70 @@ describe("DPDC's own amount labels", () => {
   it('copes with the letters the bill font drops (র্ and ্য)', () => {
     const damaged = 'সবেমাট পিরেশাধেযাগ টাকা 2,610.00\nপিরেশােধর শষ তািরেখর পর পিরেশাধেযাগ সবেমাট টাকা 2,740.50'
     expect(parseBillText(damaged)).toMatchObject({ amount: 2610, lateAmount: 2740.5 })
+  })
+})
+
+describe('meter readings', () => {
+  it('keeps present and previous readings from the real-bill readings block', () => {
+    const readings = ['তমান িরিডং', 'পূ', 'ববতী িরিডং', 'ববত ইউিনট', '604', '417', '187'].join('\n')
+    expect(parseBillText(readings)).toMatchObject({ presentReading: 604, previousReading: 417, units: 187 })
+  })
+
+  it('works out units from the two readings when no consumed figure is printed', () => {
+    expect(parseBillText('বর্তমান রিডিং: 604\nপূর্ববর্তী রিডিং: 417')).toMatchObject({
+      presentReading: 604,
+      previousReading: 417,
+      units: 187,
+    })
+  })
+
+  it('reads damaged reading labels', () => {
+    expect(parseBillText('তমান রিডিং 604\nপূ ববতী রিডিং 417')).toMatchObject({ presentReading: 604, previousReading: 417 })
+  })
+
+  it('reads English reading labels', () => {
+    expect(parseBillText('Present Reading 10,512\nPrevious Reading 10,200')).toMatchObject({
+      presentReading: 10512,
+      previousReading: 10200,
+      units: 312,
+    })
+  })
+})
+
+describe('August bill layout: two-column totals table', () => {
+  // Pasted from a real bill (amounts only).
+  const table = [
+    'মাসিক মোট বিল',
+    '1607.55    সর্বমোট পরিশোধযোগ্য টাকা    1608.00',
+    'পরিশোধের শেষ তারিখের পর মোট টাকা',
+    '1685.00    পরিশোধের শেষ তারিখের পর পরিশোধযোগ্য সর্বমোট টাকা    1685.00',
+  ]
+
+  it('takes the payable total, not the unrounded monthly total', () => {
+    expect(parseBillText(table.join('\n'))).toMatchObject({ amount: 1608, lateAmount: 1685 })
+  })
+
+  it.each([
+    ['reph moved after the next letter', 'সবর্মোট'],
+    ['reph dropped', 'সবমোট'],
+    ['visual order with reph moved', 'সবর্েমাট'],
+  ])('still finds the payable total with %s', (_, word) => {
+    const text = table.join('\n').replaceAll('সর্বমোট', word).replaceAll('পরিশোধযোগ্য', 'পিরেশাধেযাগ')
+    expect(parseBillText(text)).toMatchObject({ amount: 1608, lateAmount: 1685 })
+  })
+
+  it('never falls back to the monthly total when the payable label is unreadable', () => {
+    const text = 'মাসিক মোট বিল\n1607.55    ????? পরিশোধযোগ্য টাকা    1608.00'
+    expect(parseBillText(text).amount).toBe(1608)
+  })
+})
+
+describe('reph tolerance in reading labels', () => {
+  it.each([
+    ['বর্তমান রিডিং 604\nপূর্ববর্তী রিডিং 417'],
+    ['বতর্মান রিডিং 604\nপূবর্বতর্ী রিডিং 417'],
+    ['তমান রিডিং 604\nপূববতী রিডিং 417'],
+  ])('%s', (text) => {
+    expect(parseBillText(text)).toMatchObject({ presentReading: 604, previousReading: 417, units: 187 })
   })
 })

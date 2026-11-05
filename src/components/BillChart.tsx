@@ -132,6 +132,11 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
                 </span>
               )}
               {hovered.bill.units != null && <span>{formatQuantity(hovered.bill.units)} kWh</span>}
+              {hovered.bill.presentReading != null && hovered.bill.previousReading != null && (
+                <span className="chart__tip-muted">
+                  {t('meterReading')}: {formatQuantity(hovered.bill.previousReading)} → {formatQuantity(hovered.bill.presentReading)}
+                </span>
+              )}
             </>
           ) : (
             <span>—</span>
