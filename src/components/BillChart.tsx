@@ -53,7 +53,13 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
 
   const latestIdx = slots.findLastIndex((s) => s.bill?.amount != null)
   const maxIdx = amounts.indexOf(Math.max(...amounts))
-  const labelled = new Set([latestIdx, maxIdx].filter((i) => i >= 0 && amounts[i] > 0))
+  // Label every bar when the labels fit side by side; otherwise only the latest and the highest.
+  // Width estimate for 11.5px tabular digits: ~6.6px a character plus a small gap.
+  const labelW = Math.max(0, ...amounts.map((v) => (v > 0 ? formatMoney(Math.round(v)).length * 6.6 + 4 : 0)))
+  const allFit = band >= labelW
+  const labelled = new Set(
+    allFit ? amounts.flatMap((a, i) => (a > 0 ? [i] : [])) : [latestIdx, maxIdx].filter((i) => i >= 0 && amounts[i] > 0),
+  )
 
   if (slots.length === 0) return null
   const hovered = hover !== null ? slots[hover] : null
