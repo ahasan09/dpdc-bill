@@ -64,32 +64,36 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
       {data.accounts.length === 0 ? (
         <p className="empty">{t('noAccounts')}</p>
       ) : (
-        <ul className="list">
+        <ul className="list list--compact">
           {data.accounts.map((a) => {
             const isDefault = a.id === data.defaultAccountId
             const now = shiftPeriod(currentPeriod(), -1) // last month's e-bill
             const url = buildBillUrl({ billType: 'current', ...now, customerNo: a.customerNo, email: data.email })
             return (
               <li key={a.id} className="list__item">
-                <div className="list__main">
-                  <p className="list__title">
+                {isDefault ? (
+                  <span className="acct-star acct-star--on" title={t('default')}>
+                    <Icon name="star" size={16} />
+                    <span className="sr-only">{t('default')}</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    className="icon-btn acct-star"
+                    title={t('makeDefault')}
+                    aria-label={`${t('makeDefault')}: ${accountLabel(a, t)}`}
+                    onClick={() => update((d) => setDefaultAccount(d, a.id))}
+                  >
+                    <Icon name="star" size={16} />
+                  </button>
+                )}
+                <p className="list__main list__inline">
+                  <span className="list__title" title={accountLabel(a, t)}>
                     {accountLabel(a, t)}
-                    {isDefault && <span className="badge">{t('default')}</span>}
-                  </p>
-                  <p className="list__meta mono">{a.customerNo}</p>
-                </div>
+                  </span>
+                  <span className="list__meta mono">{a.customerNo}</span>
+                </p>
                 <div className="list__actions">
-                  {!isDefault && (
-                    <button
-                      type="button"
-                      className="icon-btn"
-                      title={t('makeDefault')}
-                      aria-label={`${t('makeDefault')}: ${accountLabel(a, t)}`}
-                      onClick={() => update((d) => setDefaultAccount(d, a.id))}
-                    >
-                      <Icon name="star" />
-                    </button>
-                  )}
                   <button
                     type="button"
                     className="icon-btn"
@@ -97,7 +101,7 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
                     aria-label={`${t('edit')}: ${accountLabel(a, t)}`}
                     onClick={() => setEditing(a)}
                   >
-                    <Icon name="edit" />
+                    <Icon name="edit" size={16} />
                   </button>
                   <button
                     type="button"
@@ -106,10 +110,10 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
                     aria-label={`${t('delete')}: ${accountLabel(a, t)}`}
                     onClick={() => remove(a)}
                   >
-                    <Icon name="trash" />
+                    <Icon name="trash" size={16} />
                   </button>
                   <a
-                    className="btn btn--soft btn--sm"
+                    className="btn btn--soft btn--xs"
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -121,7 +125,7 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
                       )
                     }}
                   >
-                    {t('check')} <Icon name="external" size={14} />
+                    {t('check')} <Icon name="external" size={13} />
                   </a>
                 </div>
               </li>

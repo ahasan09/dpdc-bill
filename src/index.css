@@ -349,6 +349,7 @@ button {
   box-shadow: var(--shadow);
   display: grid;
   gap: 10px;
+  min-width: 0; /* let long content shrink instead of widening the page */
 }
 
 @media (min-width: 600px) {
@@ -1045,6 +1046,7 @@ select.input {
   margin: 0 -6px;
   padding: 0;
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* rows never grow wider than the card */
   gap: 2px;
 }
 
@@ -1116,6 +1118,60 @@ select.input {
   margin-left: 4px;
 }
 
+/* Saved numbers: one line per number. */
+.list--compact .list__item {
+  gap: 4px;
+  padding: 3px 4px;
+}
+
+.list--compact .icon-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+}
+
+.list__inline {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0 8px;
+  margin: 0;
+}
+
+.list__inline .list__title {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.acct-star {
+  color: var(--text-3);
+}
+
+.acct-star--on {
+  display: inline-grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  color: var(--amber);
+}
+
+.acct-star--on svg {
+  fill: currentColor;
+}
+
+.btn--xs {
+  min-height: 28px;
+  padding: 2px 9px;
+  font-size: 13px;
+  border-radius: 8px;
+}
+
 .list__chevron {
   flex: none;
   color: var(--text-3);
@@ -1135,16 +1191,6 @@ select.input {
 .badge--muted {
   background: var(--surface-3);
   color: var(--text-2);
-}
-
-@media (max-width: 359px) {
-  .list__item:has(.list__actions) {
-    flex-wrap: wrap;
-  }
-  .list__actions {
-    width: 100%;
-    justify-content: flex-end;
-  }
 }
 
 /* ---------- Dialog ---------- */
