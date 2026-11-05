@@ -112,13 +112,27 @@ export function findDate(text: string): string | null {
   return null
 }
 
-/** Taka amounts: "Tk. 1,23,456.78", "৳ 2,345", "2345.00". Ignores things that look like dates. */
-function findAmount(text: string): number | null {
+/** All taka amounts in a text, in order: "Tk. 1,23,456.78", "৳ 2,345", "2345.00". Dates are ignored. */
+function amountsIn(text: string): number[] {
   const t = normalizeDigits(text).replace(/(?<!\d)\d{1,2}[-/.]\d{1,2}[-/.]\d{2,4}(?!\d)/g, ' ')
-  const m = /(?:৳|tk\.?|bdt|taka|টাকা)?\s*(-?\d{1,3}(?:,\d{2,3})+|-?\d+)(\.\d{1,2})?(?!\d)/i.exec(t)
-  if (!m) return null
-  const n = Number(m[1].replace(/,/g, '') + (m[2] ?? ''))
-  return Number.isFinite(n) ? n : null
+  const out: number[] = []
+  for (const m of t.matchAll(/(?<![\d.])(-?\d{1,3}(?:,\d{2,3})+|-?\d+)(\.\d{1,2})?(?![\d,])/g)) {
+    const n = Number(m[1].replace(/,/g, '') + (m[2] ?? ''))
+    if (Number.isFinite(n)) out.push(n)
+  }
+  return out
+}
+
+/**
+ * The amount after a total label. When two totals sit side by side (pay by the
+ * due date / pay after it), the smaller one is the amount due by the due date:
+ * the late amount only ever adds a surcharge.
+ */
+function findAmount(text: string): number | null {
+  const [a, b] = amountsIn(text)
+  if (a === undefined) return null
+  if (b !== undefined && a > 0 && b > 0 && Math.max(a, b) / Math.min(a, b) <= 1.25) return Math.min(a, b)
+  return a
 }
 
 function findUnits(text: string): number | null {
@@ -129,45 +143,103 @@ function findUnits(text: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
+/**
+ * Bangla "skeleton": the text without vowel signs and other marks. Bill fonts
+ * often drop or reorder those (শেষ → শষ, পরিশোধের → পিরেশােধর), but the main
+ * letters survive, so labels are matched on skeletons. `map` points each
+ * skeleton character back to its position in the original line.
+ */
+const MARKS = /[ঁ-ঃ়া-্ৗ]/g
+function skeletonOf(line: string): { s: string; map: number[] } {
+  let s = ''
+  const map: number[] = []
+  for (let i = 0; i < line.length; i++) {
+    if (/[ঁ-ঃ়া-্ৗ]/.test(line[i])) continue
+    s += line[i]
+    map.push(i)
+  }
+  return { s, map }
+}
+/** Writes a label regex normally; matching happens on skeletons. */
+const sk = (re: RegExp) => new RegExp(re.source.replace(MARKS, ''), re.flags)
+
 type Finder<T> = (text: string) => T | null
+type Line = { text: string; s: string; map: number[] }
 
 /**
  * Finds the first line matching one of the labels (in priority order) and reads
- * the value after the label on that line, or on the next two lines.
+ * the value after the label on that line, or on the next two lines. Lines that
+ * match `skip` (e.g. "after due date") are ignored.
  */
-function labeled<T>(lines: string[], labels: RegExp[], find: Finder<T>): T | null {
+function labeled<T>(lines: Line[], labels: RegExp[], find: Finder<T>, skip?: RegExp): T | null {
   for (const label of labels) {
     for (let i = 0; i < lines.length; i++) {
-      const match = label.exec(lines[i])
-      if (!match) continue
-      const rest = lines[i].slice(match.index + match[0].length)
-      const value = find(rest) ?? find(lines[i + 1] ?? '') ?? find(lines[i + 2] ?? '')
+      const { text, s, map } = lines[i]
+      const match = label.exec(s)
+      if (!match || skip?.test(s)) continue
+      const end = match.index + match[0].length
+      const rest = text.slice(end < map.length ? map[end] : text.length)
+      const value = find(rest) ?? find(lines[i + 1]?.text ?? '') ?? find(lines[i + 2]?.text ?? '')
       if (value !== null) return value
     }
   }
   return null
 }
 
-// Labels, most specific first. A total line must win over "Energy Charge" etc.
+/**
+ * Units from the meter readings: three numbers near a "reading" label where
+ * present − previous = consumed (604 − 417 = 187). Independent of layout.
+ */
+function unitsFromReadings(lines: Line[]): number | null {
+  for (let i = 0; i < lines.length; i++) {
+    if (!/reading|রিডিং/i.test(lines[i].text) && !/রড(?![\u0995-\u09B9])/.test(lines[i].s)) continue
+    const nums: number[] = []
+    for (const l of lines.slice(i, i + 10)) {
+      for (const m of l.text.matchAll(/(?<![\d./-])(\d{1,3}(?:,\d{3})+|\d+)(\.\d+)?(?![\d/-])/g)) {
+        nums.push(Number(m[1].replace(/,/g, '') + (m[2] ?? '')))
+      }
+    }
+    const ok = (a: number, b: number, c: number) => a > b && c > 0 && Math.abs(a - b - c) < 0.01
+    for (let j = 0; j + 2 < nums.length; j++) if (ok(nums[j], nums[j + 1], nums[j + 2])) return nums[j + 2]
+    for (let j = 0; j < nums.length; j++)
+      for (let k = j + 1; k < nums.length; k++)
+        for (let m = k + 1; m < nums.length; m++) if (ok(nums[j], nums[k], nums[m])) return nums[m]
+  }
+  return null
+}
+
+// Labels, most specific first. Bangla ones are matched on skeletons (see sk).
 const AMOUNT_LABELS = [
+  /payable\s*(?:with)?in\s*(?:the\s*)?due\s*date|(?:on|by)\s*(?:or\s*before\s*)?(?:the\s*)?due\s*date/i,
+  sk(/(?:নির্ধারিত|শেষ)?\s*তারিখের\s*মধ্যে|তারিখের\s*ভিতরে/),
   /net\s*payable|total\s*payable|payable\s*amount|amount\s*payable|amount\s*to\s*be\s*paid/i,
   /grand\s*total|total\s*bill(?:\s*amount)?|total\s*amount|bill\s*amount/i,
-  /সর্বমোট|মোট\s*(?:প্রদেয়|প্রদেয়|দেয়|দেয়|পরিশোধযোগ্য|টাকা|বিল)|পরিশোধযোগ্য\s*(?:টাকা|অর্থ)?|প্রদেয়\s*(?:টাকা|অর্থ)|প্রদেয়\s*(?:টাকা|অর্থ)/,
+  sk(/সর্বমোট|মোট\s*(?:প্রদেয়|প্রদেয়|দেয়|দেয়|পরিশোধযোগ্য|টাকা|বিল)|পরিশোধযোগ্য\s*(?:টাকা|অর্থ)?|প্রদেয়\s*(?:টাকা|অর্থ)|প্রদেয়\s*(?:টাকা|অর্থ)/),
   /(?<![a-z])total(?![a-z])/i,
 ]
+/** Late-payment lines: the amount there includes a surcharge. */
+const LATE_PAYMENT = new RegExp(
+  [
+    /after\s*(?:the\s*)?due|late\s*(?:payment|fee|charge)|surcharge|(?<![a-z])lps(?![a-z])/.source,
+    sk(/বিলম্ব|মাশুল|সারচার্জ/).source,
+    sk(/তারিখের\s*পর(?!শ)/).source, // "after the date", but not "তারিখের পরিশোধ…"
+  ].join('|'),
+  'i',
+)
 const UNIT_LABELS = [
   /(?:units?\s*consumed|consumed\s*units?|total\s*(?:units?|consumption)|net\s*units?|billed\s*units?|energy\s*consumed|consumption)/i,
-  /ব্যবহৃত\s*(?:ইউনিট|বিদ্যুৎ)|মোট\s*ইউনিট|বিলকৃত\s*ইউনিট|ইউনিট/,
+  sk(/ব্যবহৃত\s*(?:ইউনিট|বিদ্যুৎ)|ববত\s*ইউনিট|মোট\s*ইউনিট|বিলকৃত\s*ইউনিট|ইউনিট/),
   /kwh/i,
 ]
 const DUE_LABELS = [
   /due\s*date|last\s*date(?:\s*of\s*payment)?|pay\s*by|payment\s*due/i,
-  /পরিশোধের\s*শেষ\s*তারিখ|শেষ\s*তারিখ|পরিশোধের\s*তারিখ/,
+  sk(/পরিশোধের\s*শেষ\s*তারিখ|শেষ\s*তারিখ|পরিশোধের\s*তারিখ/),
 ]
-const MONTH_LABELS = [/bill(?:ing)?\s*(?:month|period)|month\s*of\s*bill/i, /বিলের\s*মাস|বিল\s*মাস|মাস/]
+const MONTH_LABELS = [/bill(?:ing)?\s*(?:month|period)|month\s*of\s*bill/i, sk(/বিলের\s*মাস|বিল\s*মাস|মাস/)]
 const CUSTOMER_LABELS = [
   /customer\s*(?:no|number|id)|consumer\s*(?:no|number)|account\s*(?:no|number)/i,
-  /কাস্টমার\s*(?:নং|নম্বর|নাম্বার)|গ্রাহক\s*(?:নং|নম্বর|নাম্বার)|হিসাব\s*নম্বর/,
+  // "কামার নং" is how some bills return কাস্টমার নং (the স্ট conjunct is lost).
+  sk(/(?:কাস্টমার|কাস্টোমার|কামার|গ্রাহক)\s*(?:নং|নম্বর|নাম্বার)|হিসাব\s*নম্বর/),
 ]
 
 const FILE_NAME = /ebill[_\-\s]*(\d{6,12})[_\-\s]*([a-z]+)[_\-\s]*(\d{4})/i
@@ -196,30 +268,30 @@ export function parseBillText(
   // Repair Bangla, make digits ASCII, then join Bangla letters that a PDF split with
   // spaces ("কাস্ট মার নম্ব র"); labels allow optional spaces, so they still match.
   text = normalizeDigits(repairBangla(text))
-  const lines = text
+  const lines: Line[] = text
     .split(/\r?\n/)
     .map((l) =>
       l
         .replace(/\s+/g, ' ')
-        .replace(/([\u0980-\u09FF]) (?=[\u0980-\u09FF])/g, '$1')
+        .replace(/([ঀ-৿]) (?=[ঀ-৿])/g, '$1')
         .trim(),
     )
     .filter(Boolean)
-  const normalized = normalizeDigits(text)
+    .map((l) => ({ text: l, ...skeletonOf(l) }))
 
   const fromFile = opts.fileName ? FILE_NAME.exec(opts.fileName) : null
   const fileMonth = fromFile ? monthFromWord(fromFile[2]) : null
   const fileYear = fromFile ? toYear(fromFile[3]) : null
 
   // Customer number: a saved number seen in the text beats a label match, which beats the file name.
-  const known = (opts.knownCustomerNos ?? []).find((no) => new RegExp(`(?<!\\d)${no}(?!\\d)`).test(normalized))
+  const known = (opts.knownCustomerNos ?? []).find((no) => new RegExp(`(?<!\\d)${no}(?!\\d)`).test(text))
   const customerNo = known ?? labeled(lines, CUSTOMER_LABELS, digitsOnly) ?? fromFile?.[1] ?? null
 
   // Month: the file name is authoritative; then a labelled "Bill Month"; then the first month/year in the text.
   const period =
     fileMonth && fileYear
       ? { year: fileYear, month: fileMonth }
-      : (labeled(lines, MONTH_LABELS, findPeriod) ?? findPeriod(lines.slice(0, 40).join('\n')))
+      : (labeled(lines, MONTH_LABELS, findPeriod) ?? findPeriod(lines.slice(0, 40).map((l) => l.text).join('\n')))
 
   const warning = lines.length === 0 ? 'noText' : looksLikeLegacyBangla(text) ? 'unreadableBangla' : null
 
@@ -227,8 +299,8 @@ export function parseBillText(
     customerNo,
     year: period?.year ?? null,
     month: period?.month ?? null,
-    amount: labeled(lines, AMOUNT_LABELS, findAmount),
-    units: labeled(lines, UNIT_LABELS, findUnits),
+    amount: labeled(lines, AMOUNT_LABELS, findAmount, LATE_PAYMENT),
+    units: unitsFromReadings(lines) ?? labeled(lines, UNIT_LABELS, findUnits),
     dueDate: labeled(lines, DUE_LABELS, findDate),
     warning,
   }

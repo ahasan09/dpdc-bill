@@ -153,3 +153,41 @@ describe('Bangla text as Chrome-made PDFs return it', () => {
     })
   })
 })
+
+describe('real-bill shapes reported by a user (labels and readings only)', () => {
+  // Pasted from a real DPDC bill: label text as the PDF returns it, plus meter readings.
+  const readings = ['তমান িরিডং', 'পূ', 'ববতী িরিডং', 'ববত ইউিনট', '604', '417', '187'].join('\n')
+
+  it('takes units from present − previous readings, not the first number', () => {
+    expect(parseBillText(readings).units).toBe(187)
+  })
+
+  it('also works when the readings sit in one table row', () => {
+    expect(parseBillText('বর্তমান রিডিং পূর্ববর্তী রিডিং ব্যবহৃত ইউনিট\n604 417 187').units).toBe(187)
+  })
+
+  it('reads the due date under a damaged label', () => {
+    expect(parseBillText('পিরেশােধর শষ তািরখ\n15-10-2026').dueDate).toBe('2026-10-15')
+  })
+
+  it('reads the customer number under "কামার নং"', () => {
+    expect(parseBillText('কামার নং 12345678').customerNo).toBe('12345678')
+  })
+})
+
+describe('amount payable by the due date, not after it', () => {
+  it.each([
+    ['separate lines, on-time first', 'নির্ধারিত তারিখের মধ্যে পরিশোধযোগ্য 2,610.00\nনির্ধারিত তারিখের পরে পরিশোধযোগ্য 2,740.50'],
+    ['late line first', 'বিলম্ব মাশুলসহ মোট টাকা 2,740.50\nমোট টাকা 2,610.00'],
+    ['two totals side by side', 'মোট টাকা\n2,740.50 2,610.00'],
+    ['English, late first', 'Payable after due date Tk. 2,740.50\nNet Payable Tk. 2,610.00'],
+    ['English with LPS', 'Total with LPS 2,740.50\nTotal Amount 2,610.00'],
+    ['damaged Bangla', 'িনধািরত তািরেখর মেধ্য 2,610.00\nিনধািরত তািরেখর পের 2,740.50'],
+  ])('%s', (_, text) => {
+    expect(parseBillText(text).amount).toBe(2610)
+  })
+
+  it('does not merge unrelated amounts on one line', () => {
+    expect(parseBillText('Total Amount 2,610.00 VAT 124.28').amount).toBe(2610)
+  })
+})
