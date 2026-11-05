@@ -92,23 +92,8 @@ export default function App() {
       )}
 
       <main className="main">
-        <section className="hero">
-          <h1 className="hero__title">{t('tagline')}</h1>
-          <ol className="steps">
-            <li>
-              <span className="steps__n">1</span>
-              {t('how1')}
-            </li>
-            <li>
-              <span className="steps__n">2</span>
-              {t('how2')}
-            </li>
-            <li>
-              <span className="steps__n">3</span>
-              {t('how3')}
-            </li>
-          </ol>
-        </section>
+        {/* The page's main heading stays for screen readers and search engines, hidden from view. */}
+        <h1 className="sr-only">{t('tagline')}</h1>
 
         <div className="grid">
           <div className="grid__main">

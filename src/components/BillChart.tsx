@@ -48,7 +48,10 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
   const plotW = width - PAD.left - PAD.right
   const plotH = HEIGHT - PAD.top - PAD.bottom
   const band = plotW / Math.max(slots.length, 1)
-  const barW = Math.min(36, Math.max(6, band - 2 - band * 0.28)) // ≥2px surface gap between bars
+  // Fewer months → wider bars (12 months: 36px … 2 months: 76px), never more than ~60% of the
+  // column, so there is always a clear gap (≥2px) between bars.
+  const maxBar = 36 + (MONTHS - Math.min(slots.length, MONTHS)) * 4
+  const barW = Math.min(maxBar, Math.max(6, Math.min(band * 0.62, band - 2)))
   const y = (v: number) => PAD.top + plotH - (v / top) * plotH
 
   const latestIdx = slots.findLastIndex((s) => s.bill?.amount != null)

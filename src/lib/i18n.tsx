@@ -65,10 +65,6 @@ const en = {
   numberSaved: 'Saved “{name}”',
 
   // how it works
-  howTitle: 'How it works',
-  how1: 'Pick a saved number or type one',
-  how2: 'Choose the bill type and month',
-  how3: 'Type the security code on the DPDC page',
   whyCaptcha:
     'DPDC protects bills with a security code, so the bill opens on the official site. We never see your bill.',
 
@@ -259,10 +255,6 @@ const bn: Record<MessageKey, string> = {
   openManually: 'ডিপিডিসি বিল পাতা খুলুন',
   numberSaved: '“{name}” সংরক্ষিত হয়েছে',
 
-  howTitle: 'যেভাবে কাজ করে',
-  how1: 'সংরক্ষিত নম্বর বাছুন বা নতুন লিখুন',
-  how2: 'বিলের ধরন ও মাস বাছুন',
-  how3: 'ডিপিডিসি পাতায় সিকিউরিটি কোড লিখুন',
   whyCaptcha:
     'ডিপিডিসি বিল সিকিউরিটি কোড দিয়ে সুরক্ষিত, তাই বিল অফিসিয়াল সাইটেই খোলে। আমরা আপনার বিল দেখি না।',
 

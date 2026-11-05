@@ -273,55 +273,6 @@ button {
   padding: 14px 16px 24px;
 }
 
-.hero {
-  margin: 0 0 14px;
-}
-
-/* One line: scales with the screen instead of wrapping. */
-.hero__title {
-  font-size: clamp(1rem, 0.55rem + 2.2vw, 1.6rem);
-  line-height: 1.25;
-  letter-spacing: -0.015em;
-  font-weight: 700;
-  text-wrap: balance;
-}
-
-.steps {
-  list-style: none;
-  padding: 0;
-  margin: 8px 0 0;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px 16px;
-  color: var(--text-2);
-  font-size: 13.5px;
-}
-
-/* Phones: the form is self-explanatory, so the steps just push it down. */
-@media (max-width: 599px) {
-  .steps {
-    display: none;
-  }
-}
-
-.steps li {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.steps__n {
-  display: grid;
-  place-items: center;
-  width: 19px;
-  height: 19px;
-  border-radius: 50%;
-  background: var(--primary-soft);
-  color: var(--on-soft);
-  font-weight: 700;
-  font-size: 12px;
-}
-
 .grid {
   display: grid;
   gap: 12px;
