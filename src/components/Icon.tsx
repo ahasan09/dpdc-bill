@@ -24,6 +24,7 @@ const paths = {
       <path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" />
     </>
   ),
+  upload: <path d="M12 16V4M7 9l5-5 5 5M4 20h16" />,
   share: <path d="M12 3v12M7 8l5-5 5 5M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6" />,
   clock: (
     <>

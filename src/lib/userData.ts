@@ -17,23 +17,44 @@ export interface HistoryEntry {
   checkedAt: number
 }
 
+/** A bill's key numbers, read from an uploaded PDF (or typed in) and confirmed by the user. */
+export interface BillSummary {
+  id: string
+  customerNo: string
+  year: number
+  month: number
+  /** Total payable, taka */
+  amount: number | null
+  /** kWh */
+  units: number | null
+  /** yyyy-mm-dd */
+  dueDate: string | null
+  fileName: string
+  addedAt: number
+}
+
 export interface UserData {
   version: 1
   accounts: Account[]
   defaultAccountId: string | null
   history: HistoryEntry[]
+  /** One summary per customer number and month. */
+  bills: BillSummary[]
   /** Optional address the official site e-mails a bill copy to. */
   email: string
 }
 
 export const ACCOUNT_LIMIT = 50
 export const HISTORY_LIMIT = 20
+/** 25 numbers × 12 months; a summary is ~200 bytes, far below Firestore's 1 MB per document. */
+export const BILL_LIMIT = 300
 
 export const EMPTY_DATA: UserData = {
   version: 1,
   accounts: [],
   defaultAccountId: null,
   history: [],
+  bills: [],
   email: '',
 }
 
@@ -120,6 +141,39 @@ export function clearHistory(data: UserData): UserData {
   return { ...data, history: [] }
 }
 
+const billKey = (b: Pick<BillSummary, 'customerNo' | 'year' | 'month'>) => `${b.customerNo}|${b.year}|${b.month}`
+
+export function findBill(data: UserData, customerNo: string, year: number, month: number): BillSummary | undefined {
+  const key = billKey({ customerNo: normalizeCustomerNo(customerNo), year, month })
+  return data.bills.find((b) => billKey(b) === key)
+}
+
+/** Saves a summary; a summary for the same number and month is replaced. Newest months first. */
+export function upsertBill(
+  data: UserData,
+  input: Omit<BillSummary, 'id' | 'addedAt'>,
+  now: number = Date.now(),
+): UserData {
+  const bill: BillSummary = { ...input, customerNo: normalizeCustomerNo(input.customerNo), id: newId(), addedAt: now }
+  const existing = findBill(data, bill.customerNo, bill.year, bill.month)
+  if (existing) bill.id = existing.id
+  const rest = data.bills.filter((b) => billKey(b) !== billKey(bill))
+  if (!existing && rest.length >= BILL_LIMIT) return data
+  return { ...data, bills: sortBills([...rest, bill]) }
+}
+
+export function removeBill(data: UserData, id: string): UserData {
+  return { ...data, bills: data.bills.filter((b) => b.id !== id) }
+}
+
+export function billsFor(data: UserData, customerNo: string): BillSummary[] {
+  return data.bills.filter((b) => b.customerNo === customerNo)
+}
+
+function sortBills(bills: BillSummary[]): BillSummary[] {
+  return [...bills].sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month) || a.customerNo.localeCompare(b.customerNo))
+}
+
 export function setEmail(data: UserData, email: string): UserData {
   return { ...data, email: email.trim() }
 }
@@ -148,12 +202,15 @@ export function mergeUserData(cloud: UserData, local: UserData): { data: UserDat
       return true
     })
     .slice(0, HISTORY_LIMIT)
-  return { data: { ...data, history, email: data.email || local.email }, added }
+  const cloudKeys = new Set(data.bills.map(billKey))
+  const bills = sortBills([...data.bills, ...local.bills.filter((b) => !cloudKeys.has(billKey(b)))]).slice(0, BILL_LIMIT)
+  return { data: { ...data, history, bills, email: data.email || local.email }, added }
 }
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
 const str = (v: unknown) => (typeof v === 'string' ? v : '')
 const num = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : 0)
+const numOrNull = (v: unknown) => (typeof v === 'number' && Number.isFinite(v) ? v : null)
 
 /** Defensive parse for anything read from storage or the network. */
 export function sanitizeUserData(raw: unknown): UserData {
@@ -183,6 +240,22 @@ export function sanitizeUserData(raw: unknown): UserData {
     }))
     .filter((h) => /^\d+$/.test(h.customerNo) && h.month >= 1 && h.month <= 12 && h.year > 0)
     .slice(0, HISTORY_LIMIT)
+  const bills: BillSummary[] = sortBills(
+    (Array.isArray(raw.bills) ? raw.bills : [])
+      .filter(isObj)
+      .map((b) => ({
+        id: str(b.id) || newId(),
+        customerNo: normalizeCustomerNo(str(b.customerNo)),
+        year: num(b.year),
+        month: num(b.month),
+        amount: numOrNull(b.amount),
+        units: numOrNull(b.units),
+        dueDate: /^\d{4}-\d{2}-\d{2}$/.test(str(b.dueDate)) ? str(b.dueDate) : null,
+        fileName: str(b.fileName).slice(0, 200),
+        addedAt: num(b.addedAt),
+      }))
+      .filter((b) => /^\d+$/.test(b.customerNo) && b.month >= 1 && b.month <= 12 && b.year > 0),
+  ).slice(0, BILL_LIMIT)
   const defaultId = str(raw.defaultAccountId)
   return {
     version: 1,
@@ -191,6 +264,7 @@ export function sanitizeUserData(raw: unknown): UserData {
       ? defaultId
       : (accounts[0]?.id ?? null),
     history,
+    bills,
     email: str(raw.email),
   }
 }

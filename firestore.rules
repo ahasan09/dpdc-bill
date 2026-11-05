@@ -7,11 +7,14 @@ service cloud.firestore {
       allow read, delete: if request.auth != null && request.auth.uid == uid;
       allow create, update: if request.auth != null
         && request.auth.uid == uid
-        && request.resource.data.keys().hasOnly(['version', 'accounts', 'defaultAccountId', 'history', 'email', 'updatedAt'])
+        && request.resource.data.keys().hasOnly(['version', 'accounts', 'defaultAccountId', 'history', 'bills', 'email', 'updatedAt'])
         && request.resource.data.accounts is list
         && request.resource.data.accounts.size() <= 50
         && request.resource.data.history is list
         && request.resource.data.history.size() <= 20
+        // bills is optional so documents written by older app versions stay valid
+        && (!('bills' in request.resource.data)
+            || (request.resource.data.bills is list && request.resource.data.bills.size() <= 300))
         && request.resource.data.email is string
         && request.resource.data.email.size() <= 254;
     }

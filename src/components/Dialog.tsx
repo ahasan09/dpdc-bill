@@ -8,12 +8,15 @@ export function Dialog({
   onClose,
   title,
   subtitle,
+  wide,
   children,
 }: {
   open: boolean
   onClose: () => void
   title: string
   subtitle?: string
+  /** Wider dialog for forms with several columns. */
+  wide?: boolean
   children: ReactNode
 }) {
   const ref = useRef<HTMLDialogElement>(null)
@@ -30,7 +33,7 @@ export function Dialog({
   return (
     <dialog
       ref={ref}
-      className="dialog"
+      className={`dialog ${wide ? 'dialog--wide' : ''}`}
       aria-labelledby={titleId}
       onClose={onClose}
       onClick={(e) => {

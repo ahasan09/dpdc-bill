@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { AccountsCard } from './components/AccountsCard'
 import { AuthDialog } from './components/AuthDialog'
+import { BillHistoryCard } from './components/BillHistoryCard'
 import { CheckBillCard } from './components/CheckBillCard'
 import { Header } from './components/Header'
 import { HistoryCard } from './components/HistoryCard'
@@ -159,6 +160,12 @@ export default function App() {
             <ReminderCard />
           </div>
         </div>
+
+        {ready && (
+          <div className="section">
+            <BillHistoryCard data={data} update={update} />
+          </div>
+        )}
       </main>
 
       <footer className="footer">

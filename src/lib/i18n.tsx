@@ -146,6 +146,43 @@ const en = {
   ae_network: 'No connection. Check your internet and try again.',
   ae_generic: 'Something went wrong. Please try again.',
 
+  // bill history
+  billsTitle: 'Bill history',
+  uploadBills: 'Upload bill PDF',
+  addManually: 'Add manually',
+  billsEmpty: 'Upload the bill PDFs you download from DPDC. The app reads them on this device and saves a summary for each month: amount, units and due date.',
+  billsPrivacy: 'PDFs are read on your device and never uploaded. Only the summary is saved.',
+  dropHere: 'Drop bill PDFs here',
+  latestBill: 'Latest bill',
+  average: '{n}-month average',
+  highest: 'Highest',
+  amount: 'Amount (৳)',
+  units: 'Units (kWh)',
+  dueDate: 'Due date',
+  noDueDate: '—',
+  billChartLabel: 'Bill amount by month',
+  editBill: 'Edit bill',
+  deleteBill: 'Delete bill',
+  billDeleted: 'Deleted the {month} bill',
+  billsSaved: 'Saved {count} bill(s)',
+  billReplaced: 'Replaces the saved {month} bill',
+  importTitle: 'Check the bill details',
+  importSubtitle: 'Read from your PDF. Fix anything that’s wrong, then save.',
+  manualTitle: 'Add a bill',
+  reading: 'Reading {name}…',
+  notFound: 'Not found in the PDF — please fill in',
+  warnNoText: 'This PDF has no readable text (it may be a scan or photo). Please fill in the fields.',
+  warnBangla: 'This PDF uses an old Bangla font the app can’t read. Some numbers may still be found — please check every field.',
+  errTooBig: 'This file is larger than 10 MB.',
+  errNotPdf: 'This file isn’t a PDF.',
+  errProtected: 'This PDF is password protected.',
+  errBroken: 'This PDF couldn’t be opened.',
+  errAmount: 'Enter the bill amount',
+  errMonth: 'Choose the bill month',
+  skipFile: 'Skip',
+  saveBills: 'Save {count} bill(s)',
+  willAddNumber: 'This number will be added to your saved numbers.',
+
   // footer
   footerDisclaimer:
     'Not affiliated with DPDC. Bills are shown only on the official site, dpdc.org.bd. Saved numbers stay on this device unless you sign in.',
@@ -293,6 +330,42 @@ const bn: Record<MessageKey, string> = {
   ae_network: 'ইন্টারনেট সংযোগ নেই। সংযোগ দেখে আবার চেষ্টা করুন।',
   ae_generic: 'কিছু একটা সমস্যা হয়েছে। আবার চেষ্টা করুন।',
 
+  billsTitle: 'বিলের ইতিহাস',
+  uploadBills: 'বিলের PDF আপলোড',
+  addManually: 'নিজে যোগ করুন',
+  billsEmpty: 'ডিপিডিসি থেকে ডাউনলোড করা বিলের PDF আপলোড করুন। অ্যাপটি এই ডিভাইসেই সেগুলো পড়ে প্রতি মাসের সারাংশ রাখে: টাকার পরিমাণ, ইউনিট ও শেষ তারিখ।',
+  billsPrivacy: 'PDF শুধু আপনার ডিভাইসে পড়া হয়, কোথাও আপলোড হয় না। শুধু সারাংশ সংরক্ষিত হয়।',
+  dropHere: 'বিলের PDF এখানে ছাড়ুন',
+  latestBill: 'সর্বশেষ বিল',
+  average: '{n} মাসের গড়',
+  highest: 'সর্বোচ্চ',
+  amount: 'টাকা (৳)',
+  units: 'ইউনিট (kWh)',
+  dueDate: 'শেষ তারিখ',
+  noDueDate: '—',
+  billChartLabel: 'মাসভিত্তিক বিলের পরিমাণ',
+  editBill: 'বিল সম্পাদনা',
+  deleteBill: 'বিল মুছুন',
+  billDeleted: '{month}-এর বিল মুছে ফেলা হয়েছে',
+  billsSaved: '{count}টি বিল সংরক্ষিত হয়েছে',
+  billReplaced: 'সংরক্ষিত {month}-এর বিলের জায়গায় বসবে',
+  importTitle: 'বিলের তথ্য মিলিয়ে দেখুন',
+  importSubtitle: 'আপনার PDF থেকে পড়া হয়েছে। ভুল থাকলে ঠিক করে সংরক্ষণ করুন।',
+  manualTitle: 'বিল যোগ করুন',
+  reading: '{name} পড়া হচ্ছে…',
+  notFound: 'PDF-এ পাওয়া যায়নি — অনুগ্রহ করে লিখুন',
+  warnNoText: 'এই PDF-এ পড়ার মতো লেখা নেই (স্ক্যান বা ছবি হতে পারে)। অনুগ্রহ করে তথ্যগুলো লিখুন।',
+  warnBangla: 'এই PDF-এ পুরোনো বাংলা ফন্ট আছে যা অ্যাপ পড়তে পারে না। কিছু সংখ্যা পাওয়া যেতে পারে — সব ঘর মিলিয়ে দেখুন।',
+  errTooBig: 'ফাইলটি ১০ MB-এর বেশি।',
+  errNotPdf: 'এটি PDF ফাইল নয়।',
+  errProtected: 'এই PDF পাসওয়ার্ড দিয়ে সুরক্ষিত।',
+  errBroken: 'এই PDF খোলা যায়নি।',
+  errAmount: 'বিলের টাকার পরিমাণ লিখুন',
+  errMonth: 'বিলের মাস বাছুন',
+  skipFile: 'বাদ দিন',
+  saveBills: '{count}টি বিল সংরক্ষণ',
+  willAddNumber: 'এই নম্বরটি আপনার সংরক্ষিত নম্বরে যোগ হবে।',
+
   footerDisclaimer:
     'ডিপিডিসির সাথে সম্পর্কিত নয়। বিল শুধু অফিসিয়াল সাইট dpdc.org.bd-তে দেখানো হয়। সাইন ইন না করলে সংরক্ষিত নম্বর শুধু এই ডিভাইসে থাকে।',
   officialSite: 'ডিপিডিসির অফিসিয়াল ওয়েবসাইট',
@@ -338,6 +411,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
     const formatNumber = (n: number) => numberFmt.format(n)
     const monthFmt = new Intl.DateTimeFormat(locale, { month: 'long' })
     const monthName = (month: number) => monthFmt.format(new Date(2000, month - 1, 1))
+    const shortMonthFmt = new Intl.DateTimeFormat(locale, { month: 'short' })
+    const moneyFmt = new Intl.NumberFormat(lang === 'bn' ? 'bn-BD' : 'en-IN', { maximumFractionDigits: 2 })
+    const groupedFmt = new Intl.NumberFormat(lang === 'bn' ? 'bn-BD' : 'en-IN', { maximumFractionDigits: 1 })
+    const dateFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', year: 'numeric' })
     const rtf = new Intl.RelativeTimeFormat(locale, { numeric: 'auto' })
     return {
       lang,
@@ -345,6 +422,13 @@ export function I18nProvider({ children }: { children: ReactNode }) {
       locale,
       formatNumber,
       monthName,
+      shortMonth: (month) => shortMonthFmt.format(new Date(2000, month - 1, 1)),
+      formatMoney: (n) => `৳${moneyFmt.format(n)}`,
+      formatQuantity: (n) => groupedFmt.format(n),
+      formatDate: (iso) => {
+        const [y, m, d] = iso.split('-').map(Number)
+        return dateFmt.format(new Date(y, m - 1, d))
+      },
       t: (key, vars) =>
         dict[key].replace(/\{(\w+)\}/g, (_, name: string) => {
           const v = vars?.[name]

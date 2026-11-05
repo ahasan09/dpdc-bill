@@ -9,6 +9,12 @@ export interface I18n {
   t: (key: MessageKey, vars?: Record<string, string | number>) => string
   locale: string
   monthName: (month: number) => string
+  shortMonth: (month: number) => string
+  /** ৳2,610 — Bangladeshi grouping, Bangla digits in Bangla */
+  formatMoney: (n: number) => string
+  formatQuantity: (n: number) => string
+  /** yyyy-mm-dd → "15 Oct 2026" */
+  formatDate: (iso: string) => string
   formatNumber: (n: number) => string
   formatPeriod: (year: number, month: number) => string
   relativeTime: (timestamp: number) => string

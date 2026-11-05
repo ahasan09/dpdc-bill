@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
+  BILL_LIMIT,
   EMPTY_DATA,
+  findBill,
+  removeBill,
+  upsertBill,
   HISTORY_LIMIT,
   addAccount,
   defaultAccount,
@@ -80,5 +84,58 @@ describe('sanitizeUserData', () => {
       defaultAccountId: 'missing',
     })
     expect(data.defaultAccountId).toBe('x')
+  })
+})
+
+const bill = (customerNo: string, year: number, month: number, amount: number | null = 100) => ({
+  customerNo,
+  year,
+  month,
+  amount,
+  units: 50,
+  dueDate: null,
+  fileName: 'test.pdf',
+})
+
+describe('bills', () => {
+  it('keeps one summary per number and month, newest month first', () => {
+    let data = upsertBill(EMPTY_DATA, bill('11111111', 2026, 8, 100), 1)
+    data = upsertBill(data, bill('11111111', 2026, 9, 200), 2)
+    const firstId = findBill(data, '11111111', 2026, 9)!.id
+    data = upsertBill(data, bill('11111111', 2026, 9, 250), 3)
+    expect(data.bills.map((b) => [b.month, b.amount])).toEqual([
+      [9, 250],
+      [8, 100],
+    ])
+    expect(findBill(data, '11111111', 2026, 9)!.id).toBe(firstId)
+  })
+
+  it('removes a summary', () => {
+    let data = upsertBill(EMPTY_DATA, bill('11111111', 2026, 8))
+    data = removeBill(data, data.bills[0].id)
+    expect(data.bills).toEqual([])
+  })
+
+  it('stops adding new months at the limit but still allows replacing', () => {
+    let data = EMPTY_DATA
+    for (let i = 0; i < BILL_LIMIT + 3; i++) data = upsertBill(data, bill(String(10000000 + i), 2026, 1))
+    expect(data.bills).toHaveLength(BILL_LIMIT)
+    data = upsertBill(data, bill('10000000', 2026, 1, 999))
+    expect(findBill(data, '10000000', 2026, 1)!.amount).toBe(999)
+  })
+
+  it('merges device bills into the cloud copy without overwriting cloud months', () => {
+    const cloud = upsertBill(EMPTY_DATA, bill('11111111', 2026, 9, 200))
+    let local = upsertBill(EMPTY_DATA, bill('11111111', 2026, 9, 999))
+    local = upsertBill(local, bill('11111111', 2026, 8, 150))
+    const { data } = mergeUserData(cloud, local)
+    expect(data.bills.map((b) => [b.month, b.amount])).toEqual([
+      [9, 200],
+      [8, 150],
+    ])
+  })
+
+  it('reads older saved data that has no bills', () => {
+    expect(sanitizeUserData({ accounts: [] }).bills).toEqual([])
   })
 })

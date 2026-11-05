@@ -16,6 +16,11 @@ customer number and e-mail from the URL, so this app builds that URL for you.
 - **Saved numbers** with nicknames, a default (pre-selected next time), edit, delete with undo, and duplicate detection
 - **Bill types**: E-bill, Ledger (payment history) and Misc bill; quick "This month" / "Last month" picks, back to 2008
 - **Recent checks**: reopen any earlier check in one tap
+- **Bill history from PDFs**: upload (or drag in) the bill PDFs you download from DPDC. The app reads them
+  **on the device** with pdf.js and finds the customer number, bill month, amount, units and due date by their
+  English or Bangla labels (and from DPDC's `ebill_<number>_<Month>_<Year>.pdf` file name). You check the result
+  before it is saved; one summary per number and month, with latest/average/highest figures and a 12-month chart.
+  PDFs are never uploaded; only the summary is stored (and synced when signed in). Scanned bills need typing in.
 - **Login and sync (optional)**: Google or e-mail/password through Firebase Auth. Saved numbers and history sync
   across devices through Firestore, with offline support. Numbers saved before signing in are merged into the
   account and removed from the device. "Delete my saved data" deletes the user's cloud document.

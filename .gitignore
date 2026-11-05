@@ -27,3 +27,7 @@ dist-ssr
 .firebase/
 firebase-debug.log
 firestore-debug.log
+
+# Real bills must never be published. All PDFs are ignored; add a fake
+# test bill deliberately with `git add -f` after checking it.
+*.pdf
