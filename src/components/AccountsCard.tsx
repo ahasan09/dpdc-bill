@@ -56,8 +56,8 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
         <h2 id="accounts-title" className="card__title">
           {t('accountsTitle')}
         </h2>
-        <button type="button" className="btn btn--soft btn--sm" onClick={() => setEditing('new')}>
-          <Icon name="plus" size={16} /> {t('addNumber')}
+        <button type="button" className="btn btn--soft btn--xs" onClick={() => setEditing('new')}>
+          <Icon name="plus" size={14} /> {t('addNumber')}
         </button>
       </div>
 

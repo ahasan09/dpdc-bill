@@ -364,8 +364,9 @@ button {
 
 .empty {
   color: var(--text-3);
-  font-size: 14px;
-  padding: 10px;
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 6px 10px;
   border: 1px dashed var(--border-strong);
   border-radius: var(--radius-sm);
   text-align: center;
@@ -1127,6 +1128,46 @@ select.input {
   padding: 2px 9px;
   font-size: 13px;
   border-radius: 8px;
+}
+
+/* Recent checks: one line per check. */
+.check-row {
+  min-height: 32px;
+  font-size: 14px;
+}
+
+.check-row__icon {
+  flex: none;
+  color: var(--text-3);
+}
+
+.check-row__name {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.check-row__name.mono {
+  font-size: 13px;
+}
+
+.check-row .badge {
+  flex: none;
+}
+
+.check-row__meta {
+  flex: 1 1 auto;
+  min-width: 0;
+  text-align: right;
+  font-size: 12.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-variant-numeric: tabular-nums;
 }
 
 .list__chevron {
