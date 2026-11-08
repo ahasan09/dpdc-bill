@@ -4,6 +4,7 @@ import { AuthDialog } from './components/AuthDialog'
 import { BillHistoryCard } from './components/BillHistoryCard'
 import { CheckBillCard } from './components/CheckBillCard'
 import { Header } from './components/Header'
+import { GoldCard } from './components/GoldCard'
 import { HistoryCard } from './components/HistoryCard'
 import { Icon } from './components/Icon'
 import { ReminderCard } from './components/ReminderCard'
@@ -142,6 +143,7 @@ export default function App() {
                 <HistoryCard data={data} update={update} />
               </>
             )}
+            <GoldCard />
             <ReminderCard />
           </div>
         </div>
