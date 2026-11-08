@@ -1,5 +1,5 @@
 {
-  "name": "dpdc-postpaid-bill-check",
+  "name": "dpdc-bill",
   "private": true,
   "version": "0.0.0",
   "type": "module",
