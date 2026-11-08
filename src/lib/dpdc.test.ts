@@ -3,7 +3,9 @@ import {
   availableYears,
   buildBillUrl,
   currentPeriod,
+  isBillNotReady,
   isFuturePeriod,
+  latestBillPeriod,
   normalizeCustomerNo,
   shiftPeriod,
   validateCustomerNo,
@@ -72,5 +74,23 @@ describe('periods', () => {
     const years = availableYears(now)
     expect(years[0]).toBe(2026)
     expect(years.at(-1)).toBe(2008)
+  })
+})
+
+describe('bill availability', () => {
+  it('treats last month as ready from the 8th', () => {
+    expect(latestBillPeriod(new Date(2026, 10, 8))).toEqual({ year: 2026, month: 10 })
+    expect(latestBillPeriod(new Date(2026, 10, 30))).toEqual({ year: 2026, month: 10 })
+  })
+
+  it('falls back two months before the 8th, across the year boundary', () => {
+    expect(latestBillPeriod(new Date(2026, 10, 7))).toEqual({ year: 2026, month: 9 })
+    expect(latestBillPeriod(new Date(2027, 0, 3))).toEqual({ year: 2026, month: 11 })
+  })
+
+  it('flags months whose bill is not generated yet', () => {
+    const now = new Date(2026, 10, 5)
+    expect(isBillNotReady({ year: 2026, month: 10 }, now)).toBe(true)
+    expect(isBillNotReady({ year: 2026, month: 9 }, now)).toBe(false)
   })
 })

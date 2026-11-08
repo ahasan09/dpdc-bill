@@ -1,5 +1,6 @@
 import { useId, useState } from 'react'
 import { buildReminderIcs, downloadFile } from '../lib/calendar'
+import { BILL_READY_DAY } from '../lib/dpdc'
 import { useI18n } from '../lib/i18n'
 import { Icon } from './Icon'
 import { useToast } from './Toast'
@@ -13,9 +14,9 @@ export function ReminderCard() {
   const [day, setDay] = useState(() => {
     try {
       const n = Number(localStorage.getItem(KEY))
-      return n >= 1 && n <= 28 ? n : 10
+      return n >= 1 && n <= 28 ? n : BILL_READY_DAY
     } catch {
-      return 10
+      return BILL_READY_DAY
     }
   })
 

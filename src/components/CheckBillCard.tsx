@@ -5,11 +5,11 @@ import {
   CUSTOMER_NO_MIN,
   availableYears,
   buildBillUrl,
-  currentPeriod,
-  isFuturePeriod,
+  billReadyDate,
+  isBillNotReady,
+  latestBillPeriod,
   isValidEmail,
   normalizeCustomerNo,
-  shiftPeriod,
   validateCustomerNo,
   type BillType,
   type CustomerNoError,
@@ -44,7 +44,7 @@ export function CheckBillCard({
   data: UserData
   update: (fn: (d: UserData) => UserData) => void
 }) {
-  const { t, monthName, formatNumber } = useI18n()
+  const { t, monthName, formatNumber, formatPeriod } = useI18n()
   const toast = useToast()
   const ids = { cno: useId(), nick: useId(), email: useId(), month: useId(), year: useId(), type: useId() }
 
@@ -53,7 +53,7 @@ export function CheckBillCard({
   const [nickname, setNickname] = useState('')
   const [saveNumber, setSaveNumber] = useState(true)
   const [billType, setBillType] = useState<BillType>('current')
-  const [period, setPeriod] = useState<Period>(() => shiftPeriod(currentPeriod(), -1))
+  const [period, setPeriod] = useState<Period>(() => latestBillPeriod())
   const [email, setEmailInput] = useState(data.email)
   const [touched, setTouched] = useState(false)
   const [opened, setOpened] = useState<{ url: string; mode: OpenMode } | null>(null)
@@ -86,8 +86,8 @@ export function CheckBillCard({
     [valid, billType, period, customerNo, email],
   )
 
-  // Bills cover the previous month, so "Last month" is the default and the one quick pick.
-  const lastMonth = shiftPeriod(currentPeriod(), -1)
+  // A month's bill is generated after the 7th of the next month, so the newest ready bill is the default and quick pick.
+  const latest = latestBillPeriod()
   const samePeriod = (a: Period, b: Period) => a.year === b.year && a.month === b.month
   const years = availableYears()
 
@@ -298,7 +298,7 @@ export function CheckBillCard({
           <legend className="sr-only">{t('billMonth')}</legend>
           <div className="period">
             {[
-              { p: lastMonth, label: t('lastMonth') },
+              { p: latest, label: t('latestBillChip', { month: monthName(latest.month) }) },
             ].map(({ p, label }) => (
               <button
                 key={label}
@@ -352,7 +352,14 @@ export function CheckBillCard({
               </select>
             </div>
           </div>
-          {isFuturePeriod(period) && <p className="hint hint--warn">{t('futureMonth')}</p>}
+          {isBillNotReady(period) && (
+            <p className="hint hint--warn">
+              {t('futureMonth', {
+                month: formatPeriod(period.year, period.month),
+                next: formatPeriod(billReadyDate(period).getFullYear(), billReadyDate(period).getMonth() + 1),
+              })}
+            </p>
+          )}
         </fieldset>
 
         {/* Options */}

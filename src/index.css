@@ -836,6 +836,16 @@ select.input {
   color: var(--danger);
 }
 
+.icon-btn--ok:hover {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.btn--danger-text {
+  color: var(--danger);
+  margin-right: auto;
+}
+
 .link {
   display: inline-flex;
   align-items: center;
@@ -1232,6 +1242,36 @@ select.input {
 .badge--muted {
   background: var(--surface-3);
   color: var(--text-2);
+}
+
+/* Payment status in the bill table; the badge opens the payment dialog. */
+.badge--btn {
+  border: 0;
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.badge--btn:hover {
+  filter: brightness(0.96);
+  text-decoration: underline;
+}
+
+.badge--paid {
+  background: var(--ok-soft);
+  color: var(--ok);
+}
+
+.badge--unpaid {
+  background: var(--surface-3);
+  color: var(--text-2);
+}
+
+.badge--overdue {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 /* ---------- Dialog ---------- */
@@ -1719,6 +1759,29 @@ select.input {
 .actions-cell .icon-btn {
   width: 26px;
   height: 26px;
+}
+
+.bill-table tr.is-paid > :not(:nth-last-child(-n + 2)) {
+  color: var(--text-2);
+}
+
+.lock-note {
+  display: inline-grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  color: var(--text-3);
+}
+
+.unpaid-note {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--warn);
+}
+
+.unpaid-note.is-overdue {
+  color: var(--danger);
 }
 
 @media (max-width: 520px) {

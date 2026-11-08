@@ -3,8 +3,7 @@ import {
   CUSTOMER_NO_MAX,
   CUSTOMER_NO_MIN,
   buildBillUrl,
-  currentPeriod,
-  shiftPeriod,
+  latestBillPeriod,
   normalizeCustomerNo,
   validateCustomerNo,
 } from '../lib/dpdc'
@@ -28,7 +27,7 @@ import { useToast } from './Toast'
 type Update = (fn: (d: UserData) => UserData) => void
 
 export function AccountsCard({ data, update }: { data: UserData; update: Update }) {
-  const { t } = useI18n()
+  const { t, formatPeriod } = useI18n()
   const toast = useToast()
   const [editing, setEditing] = useState<Account | 'new' | null>(null)
 
@@ -67,7 +66,7 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
         <ul className="list list--compact">
           {data.accounts.map((a) => {
             const isDefault = a.id === data.defaultAccountId
-            const now = shiftPeriod(currentPeriod(), -1) // last month's e-bill
+            const now = latestBillPeriod() // newest e-bill that should exist
             const url = buildBillUrl({ billType: 'current', ...now, customerNo: a.customerNo, email: data.email })
             return (
               <li key={a.id} className="list__item">
@@ -117,7 +116,7 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    title={`${t('bt_current')} · ${t('lastMonth')}`}
+                    title={`${t('bt_current')} · ${formatPeriod(now.year, now.month)}`}
                     onClick={(e) => {
                       openBillFromLink(e, url)
                       update((d) =>

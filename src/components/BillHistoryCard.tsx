@@ -3,10 +3,13 @@ import { useI18n } from '../lib/i18n'
 import { accountLabel } from '../lib/labels'
 import {
   addAccount,
+  billStatus,
   billsFor,
   defaultAccount,
   findAccountByNo,
   removeBill,
+  setBillPaid,
+  todayIso,
   upsertBill,
   type BillSummary,
   type UserData,
@@ -14,6 +17,7 @@ import {
 import { BillChart } from './BillChart'
 import { BillImportDialog, type NewBill } from './BillImportDialog'
 import { Icon } from './Icon'
+import { PaymentDialog } from './PaymentDialog'
 import { useToast } from './Toast'
 
 type Update = (fn: (d: UserData) => UserData) => void
@@ -30,6 +34,7 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
   const [request, setRequest] = useState<File[] | 'manual' | { edit: BillSummary } | null>(null)
   const [dragging, setDragging] = useState(false)
   const [picked, setPicked] = useState<string | null>(null)
+  const [paying, setPaying] = useState<BillSummary | null>(null)
 
   // Numbers that have bills: saved numbers in their saved order first, then any others.
   const numbers = useMemo(() => {
@@ -46,6 +51,10 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
   const latest = bills[0]
   const average = recent.length ? recent.reduce((sum, b) => sum + (b.amount ?? 0), 0) / recent.length : null
   const highest = recent.reduce<BillSummary | null>((m, b) => (!m || (b.amount ?? 0) > (m.amount ?? 0) ? b : m), null)
+  const today = todayIso()
+  const unpaid = bills.filter((b) => !b.paidOn)
+  const unpaidTotal = unpaid.reduce((sum, b) => sum + (b.amount ?? 0), 0)
+  const anyOverdue = unpaid.some((b) => billStatus(b, today) === 'overdue')
 
   const nameFor = (no: string) => {
     const account = findAccountByNo(data, no)
@@ -75,6 +84,21 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
     if (newBills[0]) setPicked(newBills[0].customerNo)
     setRequest(null)
     toast(t('billsSaved', { count: newBills.length }))
+  }
+
+  function setPaid(bill: BillSummary, paidOn: string | null) {
+    update((d) => setBillPaid(d, bill.id, paidOn))
+    setPaying(null)
+    const month = formatPeriod(bill.year, bill.month)
+    if (paidOn && !bill.paidOn) {
+      toast(t('billMarkedPaid', { month }), {
+        action: { label: t('undo'), onClick: () => update((d) => setBillPaid(d, bill.id, null)) },
+      })
+    } else if (!paidOn) {
+      toast(t('billMarkedUnpaid', { month }), {
+        action: { label: t('undo'), onClick: () => update((d) => setBillPaid(d, bill.id, bill.paidOn)) },
+      })
+    }
   }
 
   function remove(bill: BillSummary) {
@@ -184,6 +208,12 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
 
           {recent.length > 1 && <BillChart bills={bills} />}
 
+          {unpaid.length > 0 && unpaidTotal > 0 && (
+            <p className={`unpaid-note ${anyOverdue ? 'is-overdue' : ''}`} role="status">
+              {t('unpaidSummary', { count: unpaid.length, amount: formatMoney(unpaidTotal) })}
+            </p>
+          )}
+
           <table className="bill-table">
             <thead>
               <tr>
@@ -203,14 +233,18 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                 <th scope="col" className="hide-sm">
                   {t('dueDate')}
                 </th>
+                <th scope="col">{t('status')}</th>
                 <th scope="col">
                   <span className="sr-only">{t('edit')}</span>
                 </th>
               </tr>
             </thead>
             <tbody>
-              {bills.map((b) => (
-                <tr key={b.id}>
+              {bills.map((b) => {
+                const status = billStatus(b, today)
+                const period = formatPeriod(b.year, b.month)
+                return (
+                <tr key={b.id} className={status === 'paid' ? 'is-paid' : undefined}>
                   <th scope="row">
                     <span className="hide-xs">{formatPeriod(b.year, b.month)}</span>
                     <span className="show-xs">{shortPeriod(b)}</span>
@@ -220,28 +254,59 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                   <td className="num">{b.units != null ? formatQuantity(b.units) : '—'}</td>
                   <td className="num hide-sm muted">{readingText(b)}</td>
                   <td className="hide-sm">{b.dueDate ? formatDate(b.dueDate) : t('noDueDate')}</td>
-                  <td className="actions-cell">
+                  <td>
                     <button
                       type="button"
-                      className="icon-btn"
-                      title={t('editBill')}
-                      aria-label={`${t('editBill')}: ${formatPeriod(b.year, b.month)}`}
-                      onClick={() => setRequest({ edit: b })}
+                      className={`badge badge--btn badge--${status}`}
+                      title={b.paidOn ? `${t('paidOn')} ${formatDate(b.paidOn)} · ${t('editPayment')}` : t('markPaid')}
+                      aria-label={`${period}: ${t(status)}${b.paidOn ? `, ${t('paidOn')} ${formatDate(b.paidOn)}` : ''}. ${b.paidOn ? t('editPayment') : t('markPaid')}`}
+                      onClick={() => setPaying(b)}
                     >
-                      <Icon name="edit" size={15} />
-                    </button>
-                    <button
-                      type="button"
-                      className="icon-btn icon-btn--danger"
-                      title={t('deleteBill')}
-                      aria-label={`${t('deleteBill')}: ${formatPeriod(b.year, b.month)}`}
-                      onClick={() => remove(b)}
-                    >
-                      <Icon name="trash" size={15} />
+                      {t(status)}
+                      {b.paidOn && <span className="hide-sm"> · {formatDate(b.paidOn)}</span>}
                     </button>
                   </td>
+                  <td className="actions-cell">
+                    {b.paidOn ? (
+                      <span className="lock-note" title={t('paidLockedNote')}>
+                        <Icon name="lock" size={14} />
+                        <span className="sr-only">{t('paidLockedNote')}</span>
+                      </span>
+                    ) : (
+                      <>
+                        <button
+                          type="button"
+                          className="icon-btn icon-btn--ok"
+                          title={t('markPaid')}
+                          aria-label={`${t('markPaid')}: ${period}`}
+                          onClick={() => setPaying(b)}
+                        >
+                          <Icon name="check" size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-btn"
+                          title={t('editBill')}
+                          aria-label={`${t('editBill')}: ${period}`}
+                          onClick={() => setRequest({ edit: b })}
+                        >
+                          <Icon name="edit" size={15} />
+                        </button>
+                        <button
+                          type="button"
+                          className="icon-btn icon-btn--danger"
+                          title={t('deleteBill')}
+                          aria-label={`${t('deleteBill')}: ${period}`}
+                          onClick={() => remove(b)}
+                        >
+                          <Icon name="trash" size={15} />
+                        </button>
+                      </>
+                    )}
+                  </td>
                 </tr>
-              ))}
+                )
+              })}
             </tbody>
           </table>
         </>
@@ -252,6 +317,8 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
           <Icon name="upload" size={24} /> {t('dropHere')}
         </div>
       )}
+
+      <PaymentDialog bill={paying} onClose={() => setPaying(null)} onSave={setPaid} />
 
       <BillImportDialog
         request={request}

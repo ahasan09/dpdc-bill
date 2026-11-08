@@ -71,6 +71,28 @@ export function currentPeriod(now: Date = new Date()): Period {
   return { year: now.getFullYear(), month: now.getMonth() + 1 }
 }
 
+/**
+ * DPDC generates a month's bill after the 7th of the following month,
+ * so the October bill can be checked from 8 November.
+ */
+export const BILL_READY_DAY = 8
+
+/** The bill month a period's bill becomes available in, and on which day. */
+export function billReadyDate(period: Period): Date {
+  const next = shiftPeriod(period, 1)
+  return new Date(next.year, next.month - 1, BILL_READY_DAY)
+}
+
+/** The newest month whose bill should exist by now. */
+export function latestBillPeriod(now: Date = new Date()): Period {
+  return shiftPeriod(currentPeriod(now), now.getDate() >= BILL_READY_DAY ? -1 : -2)
+}
+
+/** True when the bill for this month hasn't been generated yet. */
+export function isBillNotReady(period: Period, now: Date = new Date()): boolean {
+  return comparePeriods(period, latestBillPeriod(now)) > 0
+}
+
 export function shiftPeriod(period: Period, deltaMonths: number): Period {
   const index = period.year * 12 + (period.month - 1) + deltaMonths
   return { year: Math.floor(index / 12), month: (index % 12) + 1 }

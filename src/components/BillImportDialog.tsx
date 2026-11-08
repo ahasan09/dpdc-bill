@@ -1,13 +1,13 @@
 import { useEffect, useId, useState } from 'react'
 import { parseBillText } from '../lib/billParser'
-import { availableYears, normalizeCustomerNo, shiftPeriod, currentPeriod, validateCustomerNo } from '../lib/dpdc'
+import { availableYears, latestBillPeriod, normalizeCustomerNo, validateCustomerNo } from '../lib/dpdc'
 import { useI18n, type MessageKey } from '../lib/i18n'
 import { accountLabel } from '../lib/labels'
 import { PdfReadError, extractPdfText } from '../lib/pdfText'
 import { findAccountByNo, findBill, type BillSummary, type UserData } from '../lib/userData'
 import { Dialog } from './Dialog'
 
-export type NewBill = Omit<BillSummary, 'id' | 'addedAt'>
+export type NewBill = Omit<BillSummary, 'id' | 'addedAt' | 'paidOn'>
 
 interface Form {
   customerNo: string
@@ -58,7 +58,7 @@ function withUnits(f: Form, patch: Partial<Form>): Partial<Form> {
 }
 
 function blankForm(data: UserData, customerNo?: string): Form {
-  const last = shiftPeriod(currentPeriod(), -1)
+  const last = latestBillPeriod()
   const no = customerNo ?? data.accounts.find((a) => a.id === data.defaultAccountId)?.customerNo ?? ''
   return { customerNo: no, year: last.year, month: last.month, amount: '', lateAmount: '', units: '', presentReading: '', previousReading: '', dueDate: '' }
 }
@@ -180,6 +180,8 @@ export function BillImportDialog({
   const errorsFor = (f: Form) => ({
     customerNo: validateCustomerNo(f.customerNo) !== null,
     amount: !(Number(f.amount) > 0),
+    // A paid bill is locked, so a new upload can't replace it.
+    paid: validateCustomerNo(f.customerNo) === null && !!findBill(data, f.customerNo, f.year, f.month)?.paidOn,
   })
   const reading = items.some((it) => it.status === 'reading')
   const canSave = !reading && active.length > 0
@@ -266,7 +268,7 @@ function ImportRow({
   item: Item
   data: UserData
   touched: boolean
-  errors: { customerNo: boolean; amount: boolean }
+  errors: { customerNo: boolean; amount: boolean; paid: boolean }
   onChange: (patch: Partial<Form>) => void
   onSkip: (skipped: boolean) => void
   labels: { monthName: (m: number) => string; formatNumber: (n: number) => string; formatPeriod: (y: number, m: number) => string }
@@ -367,7 +369,9 @@ function ImportRow({
               ))}
             </select>
           </div>
-          {existing ? (
+          {errors.paid && !item.skipped ? (
+            <p className="error">{t('billPaidLocked', { month: labels.formatPeriod(f.year, f.month) })}</p>
+          ) : existing ? (
             <p className="hint hint--warn">{t('billReplaced', { month: labels.formatPeriod(f.year, f.month) })}</p>
           ) : miss('month') ? (
             <p className="hint hint--warn">{t('notFound')}</p>

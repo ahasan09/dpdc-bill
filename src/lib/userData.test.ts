@@ -12,6 +12,7 @@ import {
   recordCheck,
   removeAccount,
   sanitizeUserData,
+  setBillPaid,
   setDefaultAccount,
 } from './userData'
 
@@ -140,5 +141,48 @@ describe('bills', () => {
 
   it('reads older saved data that has no bills', () => {
     expect(sanitizeUserData({ accounts: [] }).bills).toEqual([])
+  })
+
+  it('reads bills saved before payments were tracked as unpaid', () => {
+    const raw = { bills: [{ ...bill('11111111', 2026, 9), id: 'a', addedAt: 1 }] }
+    expect(sanitizeUserData(raw).bills[0].paidOn).toBeNull()
+    const paid = { bills: [{ ...bill('11111111', 2026, 9), id: 'a', addedAt: 1, paidOn: '2026-10-12' }] }
+    expect(sanitizeUserData(paid).bills[0].paidOn).toBe('2026-10-12')
+  })
+})
+
+describe('paid bills', () => {
+  const paidData = () => {
+    const data = upsertBill(EMPTY_DATA, bill('11111111', 2026, 9, 200))
+    return setBillPaid(data, data.bills[0].id, '2026-10-12')
+  }
+
+  it('marks a bill paid, changes the date, and marks it unpaid again', () => {
+    let data = paidData()
+    const id = data.bills[0].id
+    expect(data.bills[0].paidOn).toBe('2026-10-12')
+    data = setBillPaid(data, id, '2026-10-15')
+    expect(data.bills[0].paidOn).toBe('2026-10-15')
+    data = setBillPaid(data, id, null)
+    expect(data.bills[0].paidOn).toBeNull()
+  })
+
+  it('ignores an invalid date', () => {
+    const data = paidData()
+    expect(setBillPaid(data, data.bills[0].id, '12/10/2026')).toBe(data)
+  })
+
+  it('locks a paid bill against deleting and replacing', () => {
+    const data = paidData()
+    expect(removeBill(data, data.bills[0].id)).toBe(data)
+    expect(upsertBill(data, bill('11111111', 2026, 9, 999))).toBe(data)
+  })
+
+  it('unlocks the bill once it is marked unpaid', () => {
+    let data = paidData()
+    data = setBillPaid(data, data.bills[0].id, null)
+    data = upsertBill(data, bill('11111111', 2026, 9, 999))
+    expect(data.bills[0].amount).toBe(999)
+    expect(removeBill(data, data.bills[0].id).bills).toEqual([])
   })
 })

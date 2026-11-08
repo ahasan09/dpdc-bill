@@ -37,6 +37,8 @@ export interface BillSummary {
   dueDate: string | null
   fileName: string
   addedAt: number
+  /** yyyy-mm-dd the user paid it, or null while unpaid. A paid bill is locked: it can't be edited, replaced or deleted. */
+  paidOn: string | null
 }
 
 export interface UserData {
@@ -154,22 +156,56 @@ export function findBill(data: UserData, customerNo: string, year: number, month
   return data.bills.find((b) => billKey(b) === key)
 }
 
-/** Saves a summary; a summary for the same number and month is replaced. Newest months first. */
+/**
+ * Saves a summary; a summary for the same number and month is replaced, unless it is paid (paid bills are locked).
+ * Newest months first.
+ */
 export function upsertBill(
   data: UserData,
-  input: Omit<BillSummary, 'id' | 'addedAt'>,
+  input: Omit<BillSummary, 'id' | 'addedAt' | 'paidOn'> & { paidOn?: string | null },
   now: number = Date.now(),
 ): UserData {
-  const bill: BillSummary = { ...input, customerNo: normalizeCustomerNo(input.customerNo), id: newId(), addedAt: now }
+  const bill: BillSummary = {
+    ...input,
+    customerNo: normalizeCustomerNo(input.customerNo),
+    id: newId(),
+    addedAt: now,
+    paidOn: input.paidOn ?? null,
+  }
   const existing = findBill(data, bill.customerNo, bill.year, bill.month)
+  if (existing?.paidOn) return data
   if (existing) bill.id = existing.id
   const rest = data.bills.filter((b) => billKey(b) !== billKey(bill))
   if (!existing && rest.length >= BILL_LIMIT) return data
   return { ...data, bills: sortBills([...rest, bill]) }
 }
 
+/** Removes an unpaid bill. Paid bills are locked; mark them unpaid first. */
 export function removeBill(data: UserData, id: string): UserData {
+  if (data.bills.some((b) => b.id === id && b.paidOn)) return data
   return { ...data, bills: data.bills.filter((b) => b.id !== id) }
+}
+
+const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/
+
+/** Today as yyyy-mm-dd in local time. */
+export function todayIso(now: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`
+}
+
+export type BillStatus = 'paid' | 'overdue' | 'unpaid'
+
+export function billStatus(bill: Pick<BillSummary, 'paidOn' | 'dueDate'>, today: string = todayIso()): BillStatus {
+  if (bill.paidOn) return 'paid'
+  return bill.dueDate && bill.dueDate < today ? 'overdue' : 'unpaid'
+}
+
+/** Marks a bill paid on a date (yyyy-mm-dd), changes the date, or with null marks it unpaid again. */
+export function setBillPaid(data: UserData, id: string, paidOn: string | null): UserData {
+  if (paidOn !== null && !ISO_DATE.test(paidOn)) return data
+  if (!data.bills.some((b) => b.id === id)) return data
+  return { ...data, bills: data.bills.map((b) => (b.id === id ? { ...b, paidOn } : b)) }
 }
 
 export function billsFor(data: UserData, customerNo: string): BillSummary[] {
@@ -259,9 +295,10 @@ export function sanitizeUserData(raw: unknown): UserData {
         units: numOrNull(b.units),
         presentReading: numOrNull(b.presentReading),
         previousReading: numOrNull(b.previousReading),
-        dueDate: /^\d{4}-\d{2}-\d{2}$/.test(str(b.dueDate)) ? str(b.dueDate) : null,
+        dueDate: ISO_DATE.test(str(b.dueDate)) ? str(b.dueDate) : null,
         fileName: str(b.fileName).slice(0, 200),
         addedAt: num(b.addedAt),
+        paidOn: ISO_DATE.test(str(b.paidOn)) ? str(b.paidOn) : null,
       }))
       .filter((b) => /^\d+$/.test(b.customerNo) && b.month >= 1 && b.month <= 12 && b.year > 0),
   ).slice(0, BILL_LIMIT)
