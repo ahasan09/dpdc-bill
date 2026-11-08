@@ -2,8 +2,8 @@
  * Bangladesh gold price as set by BAJUS (Bangladesh Jewellers Association).
  *
  * bajus.org sends no CORS headers, so the browser can't read it. A scheduled
- * GitHub Action (scripts/fetch-gold.ts) reads the page and publishes
- * gold.json next to the app; the card reads that file.
+ * scheduled job on a Mac (scripts/sync-gold.sh → scripts/fetch-gold.ts) reads
+ * the page and publishes gold.json next to the app; the card reads that file.
  */
 
 export const BAJUS_URL = 'https://www.bajus.org/gold-price'
@@ -11,13 +11,20 @@ export const BAJUS_URL = 'https://www.bajus.org/gold-price'
 /** 1 vori (ভরি) = 16 ana = 11.664 g */
 export const GRAMS_PER_VORI = 11.664
 
-export interface GoldPrice {
+/** Karats shown in the card, highest first. */
+export const KARATS = [22, 21] as const
+
+export interface KaratPrice {
   karat: number
   /** taka per gram, as BAJUS lists it */
   perGram: number
   /** taka per vori, rounded */
   perVori: number
-  /** ISO time this price was first seen on bajus.org */
+}
+
+export interface GoldPrices {
+  prices: KaratPrice[]
+  /** ISO time these prices were first seen on bajus.org */
   since: string
   source: string
 }
@@ -42,16 +49,23 @@ export function perVori(perGram: number): number {
 
 const isObj = (v: unknown): v is Record<string, unknown> => typeof v === 'object' && v !== null
 
-/** Defensive parse of gold.json. */
-export function sanitizeGoldPrice(raw: unknown): GoldPrice | null {
+const toKaratPrice = (v: unknown): KaratPrice | null =>
+  isObj(v) && typeof v.karat === 'number' && typeof v.perGram === 'number' && v.perGram > 0
+    ? { karat: v.karat, perGram: v.perGram, perVori: perVori(v.perGram) }
+    : null
+
+/** Defensive parse of gold.json. Also reads the older single-price file ({ karat, perGram, … }). */
+export function sanitizeGoldPrices(raw: unknown): GoldPrices | null {
   if (!isObj(raw)) return null
-  const { karat, perGram, since, source } = raw
-  if (typeof karat !== 'number' || typeof perGram !== 'number' || !(perGram > 0)) return null
-  if (typeof since !== 'string' || Number.isNaN(Date.parse(since))) return null
+  const list = Array.isArray(raw.prices) ? raw.prices : [raw]
+  const prices = list
+    .map(toKaratPrice)
+    .filter((p): p is KaratPrice => p !== null)
+    .sort((a, b) => b.karat - a.karat)
+  const { since, source } = raw
+  if (!prices.length || typeof since !== 'string' || Number.isNaN(Date.parse(since))) return null
   return {
-    karat,
-    perGram,
-    perVori: perVori(perGram),
+    prices,
     since,
     source: typeof source === 'string' && /^https:\/\//.test(source) ? source : BAJUS_URL,
   }

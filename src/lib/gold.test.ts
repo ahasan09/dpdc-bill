@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseBajusPerGram, perVori, sanitizeGoldPrice } from './gold'
+import { parseBajusPerGram, perVori, sanitizeGoldPrices } from './gold'
 
 // Trimmed from the real bajus.org/gold-price table.
 const row = (karat: string, price: string) => `
@@ -29,11 +29,31 @@ describe('gold price file', () => {
     expect(perVori(18580)).toBe(216717)
   })
 
-  it('accepts a valid file and rejects a broken one', () => {
-    const ok = sanitizeGoldPrice({ karat: 21, perGram: 18580, since: '2026-11-08T16:43:43.967Z', source: 'https://www.bajus.org/gold-price' })
-    expect(ok?.perVori).toBe(216717)
-    expect(sanitizeGoldPrice({ karat: 21, perGram: 'x', since: 'now' })).toBeNull()
-    expect(sanitizeGoldPrice({ karat: 21, perGram: 18580, since: '2026-11-08', source: 'javascript:alert(1)' })?.source).toBe(
+  it('reads several karats, highest first', () => {
+    const gold = sanitizeGoldPrices({
+      prices: [
+        { karat: 21, perGram: 18580 },
+        { karat: 22, perGram: 19455 },
+        { karat: 18, perGram: 'x' },
+      ],
+      since: '2026-11-08T16:43:43.967Z',
+      source: 'https://www.bajus.org/gold-price',
+    })
+    expect(gold?.prices.map((p) => [p.karat, p.perVori])).toEqual([
+      [22, 226923],
+      [21, 216717],
+    ])
+  })
+
+  it('still reads the older single-price file', () => {
+    const gold = sanitizeGoldPrices({ karat: 21, perGram: 18580, since: '2026-11-08T16:43:43.967Z' })
+    expect(gold?.prices).toEqual([{ karat: 21, perGram: 18580, perVori: 216717 }])
+  })
+
+  it('rejects a broken file and an unsafe source link', () => {
+    expect(sanitizeGoldPrices({ prices: [], since: '2026-11-08' })).toBeNull()
+    expect(sanitizeGoldPrices({ karat: 21, perGram: 'x', since: 'now' })).toBeNull()
+    expect(sanitizeGoldPrices({ karat: 21, perGram: 18580, since: '2026-11-08', source: 'javascript:alert(1)' })?.source).toBe(
       'https://www.bajus.org/gold-price',
     )
   })

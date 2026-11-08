@@ -1,32 +1,40 @@
 /**
- * Reads the 21K gold price from bajus.org and writes public/gold.json.
- * The file only changes when the price changes, so the scheduled workflow
- * commits (and redeploys) only then. Exits non-zero if the page can't be read.
+ * Reads the gold prices (see KARATS) from bajus.org and writes public/gold.json.
+ * The file only changes when a price changes, so the sync job commits (and
+ * redeploys) only then. Exits non-zero if the page can't be read.
  *
- * Run: node scripts/fetch-gold.ts
+ * Run: node scripts/fetch-gold.ts   (or npm run gold to also commit and push)
  */
 import { readFileSync, writeFileSync } from 'node:fs'
-import { BAJUS_URL, parseBajusPerGram, perVori, sanitizeGoldPrice } from '../src/lib/gold.ts'
+import { BAJUS_URL, KARATS, parseBajusPerGram, perVori, sanitizeGoldPrices } from '../src/lib/gold.ts'
 
 const FILE = new URL('../public/gold.json', import.meta.url)
-const KARAT = 21
 
 const res = await fetch(BAJUS_URL, { headers: { 'User-Agent': 'dpdc-bill gold price check' }, signal: AbortSignal.timeout(30000) })
 if (!res.ok) throw new Error(`bajus.org answered ${res.status}`)
-const perGram = parseBajusPerGram(await res.text(), KARAT)
-if (perGram === null) throw new Error(`Couldn't find the ${KARAT}K price on ${BAJUS_URL}; the page layout may have changed.`)
+const html = await res.text()
+const prices = KARATS.map((karat) => {
+  const perGram = parseBajusPerGram(html, karat)
+  if (perGram === null) throw new Error(`Couldn't find the ${karat}K price on ${BAJUS_URL}; the page layout may have changed.`)
+  return { karat, perGram, perVori: perVori(perGram) }
+})
 
 let previous = null
 try {
-  previous = sanitizeGoldPrice(JSON.parse(readFileSync(FILE, 'utf8')))
+  previous = sanitizeGoldPrices(JSON.parse(readFileSync(FILE, 'utf8')))
 } catch {
   /* first run */
 }
 
-if (previous?.karat === KARAT && previous.perGram === perGram) {
-  console.log(`Unchanged: ${perGram} BDT/gram since ${previous.since}`)
+const describe = (list: { karat: number; perGram: number }[]) => list.map((p) => `${p.karat}K ${p.perGram}`).join(', ')
+const same =
+  previous !== null &&
+  previous.prices.length === prices.length &&
+  prices.every((p, i) => previous.prices[i].karat === p.karat && previous.prices[i].perGram === p.perGram)
+
+if (same) {
+  console.log(`Unchanged: ${describe(prices)} BDT/gram since ${previous!.since}`)
 } else {
-  const next = { karat: KARAT, perGram, perVori: perVori(perGram), since: new Date().toISOString(), source: BAJUS_URL }
-  writeFileSync(FILE, JSON.stringify(next, null, 2) + '\n')
-  console.log(`Updated: ${previous?.perGram ?? '—'} → ${perGram} BDT/gram`)
+  writeFileSync(FILE, JSON.stringify({ prices, since: new Date().toISOString(), source: BAJUS_URL }, null, 2) + '\n')
+  console.log(`Updated: ${previous ? describe(previous.prices) : '—'} → ${describe(prices)} BDT/gram`)
 }

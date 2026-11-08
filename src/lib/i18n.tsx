@@ -97,9 +97,11 @@ const en = {
   openAgain: 'Open again',
 
   // gold
-  goldTitle: '{karat}K gold price',
+  goldTitle: 'Gold price',
+  goldKarat: '{karat} karat',
   goldPerVori: 'per vori',
-  goldMeta: '{perGram}/gram · since {date}',
+  goldPerGram: '{price}/gram',
+  goldSince: 'BAJUS rate since {date}',
   goldError: 'Couldn’t load the gold price. Check bajus.org.',
 
   // reminder
@@ -304,9 +306,11 @@ const bn: Record<MessageKey, string> = {
   clearHistoryConfirm: 'সাম্প্রতিক চেক মুছে ফেলবেন?',
   openAgain: 'আবার খুলুন',
 
-  goldTitle: '{karat} ক্যারেট সোনার দাম',
+  goldTitle: 'সোনার দাম',
+  goldKarat: '{karat} ক্যারেট',
   goldPerVori: 'প্রতি ভরি',
-  goldMeta: 'প্রতি গ্রাম {perGram} · {date} থেকে',
+  goldPerGram: 'প্রতি গ্রাম {price}',
+  goldSince: '{date} থেকে বাজুসের দর',
   goldError: 'সোনার দাম আনা যায়নি। bajus.org দেখুন।',
   reminderTitle: 'মাসিক রিমাইন্ডার',
   reminderBody: 'ফোন বা কম্পিউটারের ক্যালেন্ডারে প্রতি মাসের রিমাইন্ডার যোগ করুন। প্রতি মাসের ৭ তারিখের পরে নতুন বিল পাওয়া যায়।',
