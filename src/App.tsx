@@ -107,6 +107,7 @@ export default function App() {
               <Icon name="shield" size={16} />
               <span>{t('whyCaptcha')}</span>
             </p>
+            <GoldCard />
           </div>
 
           <div className="grid__side">
@@ -143,7 +144,6 @@ export default function App() {
                 <HistoryCard data={data} update={update} />
               </>
             )}
-            <GoldCard />
             <ReminderCard />
           </div>
         </div>
