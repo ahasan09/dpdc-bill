@@ -1,11 +1,21 @@
-import { useEffect, useId, useState } from 'react'
+import { LoaderCircle, TriangleAlert } from 'lucide-react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 import { parseBillText } from '../lib/billParser'
 import { availableYears, latestBillPeriod, normalizeCustomerNo, validateCustomerNo } from '../lib/dpdc'
 import { useI18n, type MessageKey } from '../lib/i18n'
 import { accountLabel } from '../lib/labels'
 import { PdfReadError, extractPdfText } from '../lib/pdfText'
 import { findAccountByNo, findBill, type BillSummary, type UserData } from '../lib/userData'
+import { cn } from '@/lib/utils'
 import { Dialog } from './Dialog'
+import { Alert, AlertDescription } from './ui/alert'
+import { Button } from './ui/button'
+import { Checkbox } from './ui/checkbox'
+import { DialogFooter } from './ui/dialog'
+import { Field, FieldMessage } from './ui/field'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 export type NewBill = Omit<BillSummary, 'id' | 'addedAt' | 'paidOn'>
 
@@ -217,7 +227,7 @@ export function BillImportDialog({
       subtitle={editing || request === 'manual' ? undefined : t('importSubtitle')}
       wide
     >
-      <div className="stack">
+      <div className="grid min-w-0 gap-4">
         <datalist id="saved-numbers">
           {data.accounts.map((a) => (
             <option key={a.id} value={a.customerNo}>
@@ -226,7 +236,7 @@ export function BillImportDialog({
           ))}
         </datalist>
 
-        <div className="import-list">
+        <div className="-mx-1 grid max-h-[min(60dvh,560px)] gap-3 overflow-auto px-1">
           {items.map((it) => (
             <ImportRow
               key={it.key}
@@ -241,16 +251,16 @@ export function BillImportDialog({
           ))}
         </div>
 
-        <p className="hint">{t('billsPrivacy')}</p>
-        <div className="dialog__actions">
-          <button type="button" className="btn btn--ghost" onClick={onClose}>
+        <FieldMessage>{t('billsPrivacy')}</FieldMessage>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
             {t('cancel')}
-          </button>
-          <button type="button" className="btn btn--primary" disabled={!canSave} onClick={save}>
-            {reading && <span className="spinner" aria-hidden="true" />}
+          </Button>
+          <Button type="button" disabled={!canSave} onClick={save}>
+            {reading && <LoaderCircle className="animate-spin" aria-hidden="true" />}
             {editing ? t('save') : t('saveBills', { count: active.length })}
-          </button>
-        </div>
+          </Button>
+        </DialogFooter>
       </div>
     </Dialog>
   )
@@ -280,17 +290,20 @@ function ImportRow({
 
   if (item.status === 'reading') {
     return (
-      <div className="import-item import-item--busy" aria-busy="true">
-        <span className="spinner" aria-hidden="true" /> {t('reading', { name: item.fileName })}
+      <div className="flex items-center gap-2.5 rounded-lg border bg-muted/40 p-3 text-sm text-muted-foreground" aria-busy="true">
+        <LoaderCircle className="size-4 animate-spin" aria-hidden="true" /> {t('reading', { name: item.fileName })}
       </div>
     )
   }
   if (item.status === 'error') {
     return (
-      <div className="import-item import-item--error" role="alert">
-        <p className="import-item__file">{item.fileName}</p>
-        <p className="error">{item.error && t(item.error)}</p>
-      </div>
+      <Alert variant="destructive" role="alert">
+        <TriangleAlert />
+        <AlertDescription>
+          <p className="truncate font-semibold text-foreground">{item.fileName}</p>
+          <p>{item.error && t(item.error)}</p>
+        </AlertDescription>
+      </Alert>
     )
   }
 
@@ -299,169 +312,131 @@ function ImportRow({
   const existing = found && found.id !== item.key ? found : undefined
   const unsaved = validNo && !findAccountByNo(data, f.customerNo)
   const showErr = (k: 'customerNo' | 'amount') => touched && errors[k]
+  const notFound = <FieldMessage tone="warn">{t('notFound')}</FieldMessage>
+
+  const numberInput = (key: 'amount' | 'lateAmount' | 'units' | 'previousReading' | 'presentReading', label: string, after?: ReactNode) => (
+    <Field>
+      <Label className="text-xs text-muted-foreground" htmlFor={`${id}-${key}`}>
+        {label}
+      </Label>
+      <Input
+        id={`${id}-${key}`}
+        className="font-mono"
+        inputMode="decimal"
+        value={f[key]}
+        aria-invalid={key === 'amount' && showErr('amount') ? true : undefined}
+        onChange={(e) => {
+          const v = e.target.value.replace(/[^\d.]/g, '')
+          onChange(key === 'previousReading' || key === 'presentReading' ? withUnits(f, { [key]: v }) : { [key]: v })
+        }}
+      />
+      {after}
+    </Field>
+  )
 
   return (
-    <div className={`import-item ${item.skipped ? 'is-skipped' : ''}`}>
+    <div className={cn('grid min-w-0 gap-3 rounded-lg border bg-muted/40 p-3.5')}>
       {item.fileName && (
-        <div className="import-item__head">
-          <p className="import-item__file" title={item.fileName}>
+        <div className="flex min-w-0 items-center justify-between gap-2">
+          <p className="min-w-0 truncate text-sm font-semibold" title={item.fileName}>
             {item.fileName}
           </p>
-          <label className="checkbox checkbox--sm">
-            <input type="checkbox" checked={item.skipped} onChange={(e) => onSkip(e.target.checked)} />
-            <span>{t('skipFile')}</span>
-          </label>
+          <Label className="shrink-0 text-xs font-normal">
+            <Checkbox checked={item.skipped} onCheckedChange={(c) => onSkip(c === true)} />
+            {t('skipFile')}
+          </Label>
         </div>
       )}
-      {item.warning && <p className="alert alert--warn">{t(item.warning)}</p>}
+      {item.warning && (
+        <Alert variant="warning">
+          <TriangleAlert />
+          <AlertDescription>{t(item.warning)}</AlertDescription>
+        </Alert>
+      )}
 
-      <fieldset className="import-grid" disabled={item.skipped}>
+      <fieldset
+        className={cn('grid min-w-0 grid-cols-2 gap-3 sm:grid-cols-4', item.skipped && 'opacity-45')}
+        disabled={item.skipped}
+      >
         <legend className="sr-only">{item.fileName || t('manualTitle')}</legend>
-        <div className="field">
-          <label className="label label--sub" htmlFor={`${id}-no`}>
+        <Field className="col-span-2">
+          <Label className="text-xs text-muted-foreground" htmlFor={`${id}-no`}>
             {t('customerNo')}
-          </label>
-          <input
+          </Label>
+          <Input
             id={`${id}-no`}
-            className={`input mono ${showErr('customerNo') ? 'is-invalid' : ''}`}
+            className="font-mono"
             inputMode="numeric"
             list="saved-numbers"
             autoComplete="off"
             value={f.customerNo}
+            aria-invalid={showErr('customerNo') || undefined}
             onChange={(e) => onChange({ customerNo: e.target.value })}
           />
           {showErr('customerNo') ? (
-            <p className="error">{t('errLength', { min: 6, max: 12 })}</p>
+            <FieldMessage tone="error">{t('errLength', { min: 6, max: 12 })}</FieldMessage>
           ) : miss('customerNo') ? (
-            <p className="hint hint--warn">{t('notFound')}</p>
+            notFound
           ) : unsaved ? (
-            <p className="hint">{t('willAddNumber')}</p>
+            <FieldMessage>{t('willAddNumber')}</FieldMessage>
           ) : null}
-        </div>
+        </Field>
 
-        <div className="field field--period">
-          <span className="label label--sub" id={`${id}-period`}>
+        <Field className="col-span-2">
+          <span className="text-xs font-medium text-muted-foreground" id={`${id}-period`}>
             {t('billMonth')}
           </span>
-          <div className="row row--tight" role="group" aria-labelledby={`${id}-period`}>
-            <select
-              className="input grow"
-              aria-label={t('month')}
-              value={f.month}
-              onChange={(e) => onChange({ month: Number(e.target.value) })}
-            >
-              {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                <option key={m} value={m}>
-                  {labels.monthName(m)}
-                </option>
-              ))}
-            </select>
-            <select
-              className="input input--year"
-              aria-label={t('year')}
-              value={f.year}
-              onChange={(e) => onChange({ year: Number(e.target.value) })}
-            >
-              {availableYears().map((y) => (
-                <option key={y} value={y}>
-                  {labels.formatNumber(y)}
-                </option>
-              ))}
-            </select>
+          <div className="flex gap-2" role="group" aria-labelledby={`${id}-period`}>
+            <Select value={String(f.month)} onValueChange={(v) => onChange({ month: Number(v) })} disabled={item.skipped}>
+              <SelectTrigger aria-label={t('month')} className="flex-1">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
+                  <SelectItem key={m} value={String(m)}>
+                    {labels.monthName(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={String(f.year)} onValueChange={(v) => onChange({ year: Number(v) })} disabled={item.skipped}>
+              <SelectTrigger aria-label={t('year')} className="w-24">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {availableYears().map((y) => (
+                  <SelectItem key={y} value={String(y)}>
+                    {labels.formatNumber(y)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
           {errors.paid && !item.skipped ? (
-            <p className="error">{t('billPaidLocked', { month: labels.formatPeriod(f.year, f.month) })}</p>
+            <FieldMessage tone="error">{t('billPaidLocked', { month: labels.formatPeriod(f.year, f.month) })}</FieldMessage>
           ) : existing ? (
-            <p className="hint hint--warn">{t('billReplaced', { month: labels.formatPeriod(f.year, f.month) })}</p>
+            <FieldMessage tone="warn">{t('billReplaced', { month: labels.formatPeriod(f.year, f.month) })}</FieldMessage>
           ) : miss('month') ? (
-            <p className="hint hint--warn">{t('notFound')}</p>
+            notFound
           ) : null}
-        </div>
+        </Field>
 
-        <div className="field">
-          <label className="label label--sub" htmlFor={`${id}-amt`}>
-            {t('amount')}
-          </label>
-          <input
-            id={`${id}-amt`}
-            className={`input mono ${showErr('amount') ? 'is-invalid' : ''}`}
-            inputMode="decimal"
-            value={f.amount}
-            onChange={(e) => onChange({ amount: e.target.value.replace(/[^\d.]/g, '') })}
-          />
-          {showErr('amount') ? (
-            <p className="error">{t('errAmount')}</p>
-          ) : miss('amount') ? (
-            <p className="hint hint--warn">{t('notFound')}</p>
-          ) : null}
-        </div>
-
-        <div className="field">
-          <label className="label label--sub" htmlFor={`${id}-late`}>
-            {t('lateAmount')}
-          </label>
-          <input
-            id={`${id}-late`}
-            className="input mono"
-            inputMode="decimal"
-            value={f.lateAmount}
-            onChange={(e) => onChange({ lateAmount: e.target.value.replace(/[^\d.]/g, '') })}
-          />
-        </div>
-
-        <div className="field">
-          <label className="label label--sub" htmlFor={`${id}-units`}>
-            {t('units')}
-          </label>
-          <input
-            id={`${id}-units`}
-            className="input mono"
-            inputMode="decimal"
-            value={f.units}
-            onChange={(e) => onChange({ units: e.target.value.replace(/[^\d.]/g, '') })}
-          />
-          {miss('units') && !f.units && <p className="hint hint--warn">{t('notFound')}</p>}
-        </div>
-
-        <div className="field">
-          <label className="label label--sub" htmlFor={`${id}-prev`}>
-            {t('previousReading')}
-          </label>
-          <input
-            id={`${id}-prev`}
-            className="input mono"
-            inputMode="decimal"
-            value={f.previousReading}
-            onChange={(e) => onChange(withUnits(f, { previousReading: e.target.value.replace(/[^\d.]/g, '') }))}
-          />
-        </div>
-
-        <div className="field">
-          <label className="label label--sub" htmlFor={`${id}-pres`}>
-            {t('presentReading')}
-          </label>
-          <input
-            id={`${id}-pres`}
-            className="input mono"
-            inputMode="decimal"
-            value={f.presentReading}
-            onChange={(e) => onChange(withUnits(f, { presentReading: e.target.value.replace(/[^\d.]/g, '') }))}
-          />
-        </div>
-
-        <div className="field">
-          <label className="label label--sub" htmlFor={`${id}-due`}>
+        {numberInput(
+          'amount',
+          t('amount'),
+          showErr('amount') ? <FieldMessage tone="error">{t('errAmount')}</FieldMessage> : miss('amount') ? notFound : null,
+        )}
+        {numberInput('lateAmount', t('lateAmount'))}
+        {numberInput('units', t('units'), miss('units') && !f.units ? notFound : null)}
+        {numberInput('previousReading', t('previousReading'))}
+        {numberInput('presentReading', t('presentReading'))}
+        <Field>
+          <Label className="text-xs text-muted-foreground" htmlFor={`${id}-due`}>
             {t('dueDate')}
-          </label>
-          <input
-            id={`${id}-due`}
-            type="date"
-            className="input"
-            value={f.dueDate}
-            onChange={(e) => onChange({ dueDate: e.target.value })}
-          />
-          {miss('dueDate') && !f.dueDate && <p className="hint hint--warn">{t('notFound')}</p>}
-        </div>
+          </Label>
+          <Input id={`${id}-due`} type="date" value={f.dueDate} onChange={(e) => onChange({ dueDate: e.target.value })} />
+          {miss('dueDate') && !f.dueDate && notFound}
+        </Field>
       </fieldset>
     </div>
   )

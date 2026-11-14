@@ -2,6 +2,11 @@ import { useId, useState } from 'react'
 import { useI18n } from '../lib/i18n'
 import { todayIso, type BillSummary } from '../lib/userData'
 import { Dialog } from './Dialog'
+import { Button } from './ui/button'
+import { DialogFooter } from './ui/dialog'
+import { Field, FieldMessage } from './ui/field'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
 
 type OnSave = (bill: BillSummary, paidOn: string | null) => void
 
@@ -42,40 +47,30 @@ function PaymentForm({ bill, onClose, onSave }: { bill: BillSummary; onClose: ()
 
   return (
     <form
-      className="stack"
+      className="grid gap-4"
       onSubmit={(e) => {
         e.preventDefault()
         if (valid) onSave(bill, date)
       }}
     >
-      <div className="field">
-        <label htmlFor={id} className="label label--sub">
-          {t('paidOn')}
-        </label>
-        <input
-          id={id}
-          type="date"
-          className="input"
-          value={date}
-          max={today}
-          required
-          onChange={(e) => setDate(e.target.value)}
-        />
-      </div>
-      <p className="hint">{t('paidLockedNote')}</p>
-      <div className="dialog__actions">
+      <Field>
+        <Label htmlFor={id}>{t('paidOn')}</Label>
+        <Input id={id} type="date" value={date} max={today} required onChange={(e) => setDate(e.target.value)} />
+        <FieldMessage>{t('paidLockedNote')}</FieldMessage>
+      </Field>
+      <DialogFooter>
         {bill.paidOn && (
-          <button type="button" className="btn btn--ghost btn--danger-text" onClick={() => onSave(bill, null)}>
+          <Button type="button" variant="ghost" className="text-destructive hover:text-destructive sm:mr-auto" onClick={() => onSave(bill, null)}>
             {t('markUnpaid')}
-          </button>
+          </Button>
         )}
-        <button type="button" className="btn btn--ghost" onClick={onClose}>
+        <Button type="button" variant="outline" onClick={onClose}>
           {t('cancel')}
-        </button>
-        <button type="submit" className="btn btn--primary" disabled={!valid}>
+        </Button>
+        <Button type="submit" disabled={!valid}>
           {bill.paidOn ? t('save') : t('markPaid')}
-        </button>
-      </div>
+        </Button>
+      </DialogFooter>
     </form>
   )
 }

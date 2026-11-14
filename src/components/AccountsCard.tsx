@@ -1,3 +1,4 @@
+import { ExternalLink, Pencil, Plus, Star, Trash2 } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 import {
   CUSTOMER_NO_MAX,
@@ -21,8 +22,14 @@ import {
 import { accountLabel } from '../lib/labels'
 import { openBillFromLink } from '../lib/openBill'
 import { Dialog } from './Dialog'
-import { Icon } from './Icon'
 import { useToast } from './Toast'
+import { Button } from './ui/button'
+import { Card, CardHeader, CardTitle } from './ui/card'
+import { Checkbox } from './ui/checkbox'
+import { DialogFooter } from './ui/dialog'
+import { Field, FieldMessage } from './ui/field'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
 
 type Update = (fn: (d: UserData) => UserData) => void
 
@@ -50,82 +57,84 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
   }
 
   return (
-    <section className="card" aria-labelledby="accounts-title">
-      <div className="card__head">
-        <h2 id="accounts-title" className="card__title">
-          {t('accountsTitle')}
-        </h2>
-        <button type="button" className="btn btn--soft btn--xs" onClick={() => setEditing('new')}>
-          <Icon name="plus" size={14} /> {t('addNumber')}
-        </button>
-      </div>
+    <Card aria-labelledby="accounts-title">
+      <CardHeader>
+        <CardTitle id="accounts-title">{t('accountsTitle')}</CardTitle>
+        <Button variant="secondary" size="xs" onClick={() => setEditing('new')}>
+          <Plus /> {t('addNumber')}
+        </Button>
+      </CardHeader>
 
       {data.accounts.length === 0 ? (
-        <p className="empty">{t('noAccounts')}</p>
+        <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">{t('noAccounts')}</p>
       ) : (
-        <ul className="list list--compact">
+        <ul className="-mx-2 grid">
           {data.accounts.map((a) => {
             const isDefault = a.id === data.defaultAccountId
             const now = latestBillPeriod() // newest e-bill that should exist
             const url = buildBillUrl({ billType: 'current', ...now, customerNo: a.customerNo, email: data.email })
             return (
-              <li key={a.id} className="list__item">
+              <li key={a.id} className="group flex items-center gap-1 rounded-md px-1 py-1 transition-colors hover:bg-accent/60">
                 {isDefault ? (
-                  <span className="acct-star acct-star--on" title={t('default')}>
-                    <Icon name="star" size={16} />
+                  <span className="grid size-8 shrink-0 place-items-center text-gold" title={t('default')}>
+                    <Star className="size-4 fill-current" />
                     <span className="sr-only">{t('default')}</span>
                   </span>
                 ) : (
-                  <button
-                    type="button"
-                    className="icon-btn acct-star"
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground/60 hover:text-gold"
                     title={t('makeDefault')}
                     aria-label={`${t('makeDefault')}: ${accountLabel(a, t)}`}
                     onClick={() => update((d) => setDefaultAccount(d, a.id))}
                   >
-                    <Icon name="star" size={16} />
-                  </button>
+                    <Star />
+                  </Button>
                 )}
-                <p className="list__main list__inline">
-                  <span className="list__title" title={accountLabel(a, t)}>
+                <p className="flex min-w-0 flex-1 items-baseline gap-2">
+                  <span className="truncate text-sm font-medium" title={accountLabel(a, t)}>
                     {accountLabel(a, t)}
                   </span>
-                  <span className="list__meta mono">{a.customerNo}</span>
+                  <span className="shrink-0 font-mono text-xs text-muted-foreground">{a.customerNo}</span>
                 </p>
-                <div className="list__actions">
-                  <button
-                    type="button"
-                    className="icon-btn"
+                <div className="flex shrink-0 items-center gap-0.5">
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground"
                     title={t('edit')}
                     aria-label={`${t('edit')}: ${accountLabel(a, t)}`}
                     onClick={() => setEditing(a)}
                   >
-                    <Icon name="edit" size={16} />
-                  </button>
-                  <button
-                    type="button"
-                    className="icon-btn icon-btn--danger"
+                    <Pencil />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
                     title={t('delete')}
                     aria-label={`${t('delete')}: ${accountLabel(a, t)}`}
                     onClick={() => remove(a)}
                   >
-                    <Icon name="trash" size={16} />
-                  </button>
-                  <a
-                    className="btn btn--soft btn--xs"
-                    href={url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`${t('bt_current')} · ${formatPeriod(now.year, now.month)}`}
-                    onClick={(e) => {
-                      openBillFromLink(e, url)
-                      update((d) =>
-                        recordCheck(d, { customerNo: a.customerNo, nickname: a.nickname, billType: 'current', ...now }),
-                      )
-                    }}
-                  >
-                    {t('check')} <Icon name="external" size={13} />
-                  </a>
+                    <Trash2 />
+                  </Button>
+                  <Button asChild variant="secondary" size="xs" className="ml-1">
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      title={`${t('bt_current')} · ${formatPeriod(now.year, now.month)}`}
+                      onClick={(e) => {
+                        openBillFromLink(e, url)
+                        update((d) =>
+                          recordCheck(d, { customerNo: a.customerNo, nickname: a.nickname, billType: 'current', ...now }),
+                        )
+                      }}
+                    >
+                      {t('check')} <ExternalLink />
+                    </a>
+                  </Button>
                 </div>
               </li>
             )
@@ -158,7 +167,7 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
           setEditing(null)
         }}
       />
-    </section>
+    </Card>
   )
 }
 
@@ -203,14 +212,12 @@ function AccountDialog({
 
   return (
     <Dialog open={account !== null} onClose={onClose} title={editing ? t('editTitle') : t('addTitle')}>
-      <form className="stack" onSubmit={submit} noValidate>
-        <div className="field">
-          <label htmlFor={ids.cno} className="label">
-            {t('customerNo')}
-          </label>
-          <input
+      <form className="grid gap-4" onSubmit={submit} noValidate>
+        <Field>
+          <Label htmlFor={ids.cno}>{t('customerNo')}</Label>
+          <Input
             id={ids.cno}
-            className={`input input--lg mono ${message ? 'is-invalid' : ''}`}
+            className="h-11 font-mono text-base tracking-wide"
             inputMode="numeric"
             autoComplete="off"
             autoFocus={!editing}
@@ -221,36 +228,31 @@ function AccountDialog({
             onChange={(e) => setCustomerNo(e.target.value)}
             onBlur={() => customerNo && setTouched(true)}
           />
-          <p id={`${ids.cno}-hint`} className={message ? 'error' : 'hint'}>
+          <FieldMessage id={`${ids.cno}-hint`} tone={message ? 'error' : 'hint'}>
             {message ?? t('customerNoHint')}
-          </p>
-        </div>
-        <div className="field">
-          <label htmlFor={ids.nick} className="label">
-            {t('nickname')}
-          </label>
-          <input
+          </FieldMessage>
+        </Field>
+        <Field>
+          <Label htmlFor={ids.nick}>{t('nickname')}</Label>
+          <Input
             id={ids.nick}
-            className="input"
             placeholder={t('nicknamePlaceholder')}
             value={nickname}
             maxLength={40}
             autoFocus={!!editing}
             onChange={(e) => setNickname(e.target.value)}
           />
-        </div>
-        <label className="checkbox">
-          <input type="checkbox" checked={makeDefault} onChange={(e) => setMakeDefault(e.target.checked)} />
-          <span>{t('makeDefault')}</span>
-        </label>
-        <div className="dialog__actions">
-          <button type="button" className="btn btn--ghost" onClick={onClose}>
+        </Field>
+        <Label className="font-normal">
+          <Checkbox checked={makeDefault} onCheckedChange={(c) => setMakeDefault(c === true)} />
+          {t('makeDefault')}
+        </Label>
+        <DialogFooter>
+          <Button type="button" variant="outline" onClick={onClose}>
             {t('cancel')}
-          </button>
-          <button type="submit" className="btn btn--primary">
-            {t('save')}
-          </button>
-        </div>
+          </Button>
+          <Button type="submit">{t('save')}</Button>
+        </DialogFooter>
       </form>
     </Dialog>
   )

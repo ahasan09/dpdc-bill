@@ -1,9 +1,13 @@
+import { Clock, ExternalLink } from 'lucide-react'
 import { buildBillUrl } from '../lib/dpdc'
 import { useI18n, type MessageKey } from '../lib/i18n'
 import { openBillFromLink } from '../lib/openBill'
 import { clearHistory, recordCheck, type UserData } from '../lib/userData'
-import { Icon } from './Icon'
+import { cn } from '@/lib/utils'
 import { useToast } from './Toast'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Card, CardHeader, CardTitle } from './ui/card'
 
 export function HistoryCard({ data, update }: { data: UserData; update: (fn: (d: UserData) => UserData) => void }) {
   const { t, formatPeriod, relativeTime, shortMonth, formatNumber } = useI18n()
@@ -18,22 +22,20 @@ export function HistoryCard({ data, update }: { data: UserData; update: (fn: (d:
   }
 
   return (
-    <section className="card" aria-labelledby="history-title">
-      <div className="card__head">
-        <h2 id="history-title" className="card__title">
-          {t('historyTitle')}
-        </h2>
+    <Card aria-labelledby="history-title">
+      <CardHeader>
+        <CardTitle id="history-title">{t('historyTitle')}</CardTitle>
         {data.history.length > 0 && (
-          <button type="button" className="btn btn--ghost btn--xs" onClick={clear}>
+          <Button variant="ghost" size="xs" onClick={clear}>
             {t('clearHistory')}
-          </button>
+          </Button>
         )}
-      </div>
+      </CardHeader>
 
       {data.history.length === 0 ? (
-        <p className="empty">{t('noHistory')}</p>
+        <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">{t('noHistory')}</p>
       ) : (
-        <ul className="list list--compact">
+        <ul className="-mx-2 grid">
           {[...data.history]
             .sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month) || b.checkedAt - a.checkedAt)
             .map((h) => {
@@ -44,7 +46,7 @@ export function HistoryCard({ data, update }: { data: UserData; update: (fn: (d:
                 <li key={h.id}>
                   {/* One line per check; the customer number is in the tooltip and the accessible name. */}
                   <a
-                    className="list__item list__item--link check-row"
+                    className="group flex items-center gap-2.5 rounded-md px-2 py-2 text-sm outline-none transition-colors hover:bg-accent focus-visible:ring-[3px] focus-visible:ring-ring/50"
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
@@ -55,19 +57,19 @@ export function HistoryCard({ data, update }: { data: UserData; update: (fn: (d:
                       update((d) => recordCheck(d, h))
                     }}
                   >
-                    <Icon name="clock" size={14} className="check-row__icon" />
-                    <span className={`check-row__name ${name ? '' : 'mono'}`}>{name || h.customerNo}</span>
-                    <span className="badge badge--muted">{type}</span>
-                    <span className="check-row__meta">
+                    <Clock className="size-3.5 shrink-0 text-muted-foreground" />
+                    <span className={cn('min-w-0 truncate font-medium', !name && 'font-mono')}>{name || h.customerNo}</span>
+                    <Badge variant="muted">{type}</Badge>
+                    <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular">
                       {shortMonth(h.month)} {formatNumber(h.year)} · {relativeTime(h.checkedAt)}
                     </span>
-                    <Icon name="external" size={14} className="list__chevron" />
+                    <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
                   </a>
                 </li>
               )
             })}
         </ul>
       )}
-    </section>
+    </Card>
   )
 }

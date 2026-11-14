@@ -1,9 +1,16 @@
+import { Eye, EyeOff, LoaderCircle } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 import { AuthError, type AuthApi } from '../hooks/useAuth'
 import { isValidEmail } from '../lib/dpdc'
 import { useI18n } from '../lib/i18n'
 import { Dialog } from './Dialog'
-import { GoogleLogo, Icon } from './Icon'
+import { GoogleLogo } from './Icon'
+import { Alert, AlertDescription } from './ui/alert'
+import { Button } from './ui/button'
+import { Field, FieldMessage } from './ui/field'
+import { Input } from './ui/input'
+import { Label } from './ui/label'
+import { Separator } from './ui/separator'
 
 type Mode = 'signIn' | 'signUp' | 'reset'
 
@@ -56,65 +63,61 @@ export function AuthDialog({ open, onClose, auth }: { open: boolean; onClose: ()
 
   return (
     <Dialog open={open} onClose={onClose} title={title} subtitle={mode === 'reset' ? undefined : t('authSubtitle')}>
-      <div className="stack">
+      <div className="grid gap-4">
         {mode !== 'reset' && (
           <>
-            <button
-              type="button"
-              className="btn btn--outline btn--lg btn--block"
+            <Button
+              variant="outline"
+              size="lg"
+              className="w-full"
               disabled={busy !== null}
               onClick={() => attempt('google', auth.signInWithGoogle)}
             >
-              {busy === 'google' ? <span className="spinner" aria-hidden="true" /> : <GoogleLogo />}
+              {busy === 'google' ? <LoaderCircle className="animate-spin" aria-hidden="true" /> : <GoogleLogo />}
               {t('continueGoogle')}
-            </button>
-            <div className="divider">
+            </Button>
+            <div className="flex items-center gap-3 text-xs text-muted-foreground uppercase">
+              <Separator className="flex-1" />
               <span>{t('or')}</span>
+              <Separator className="flex-1" />
             </div>
           </>
         )}
 
-        <form className="stack" onSubmit={submit} noValidate>
+        <form className="grid gap-4" onSubmit={submit} noValidate>
           {mode === 'signUp' && (
-            <div className="field">
-              <label htmlFor={ids.name} className="label">
-                {t('name')}
-              </label>
-              <input id={ids.name} className="input" autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
-            </div>
+            <Field>
+              <Label htmlFor={ids.name}>{t('name')}</Label>
+              <Input id={ids.name} autoComplete="name" value={name} onChange={(e) => setName(e.target.value)} />
+            </Field>
           )}
-          <div className="field">
-            <label htmlFor={ids.email} className="label">
-              {t('email')}
-            </label>
-            <input
+          <Field>
+            <Label htmlFor={ids.email}>{t('email')}</Label>
+            <Input
               id={ids.email}
               type="email"
-              className="input"
               autoComplete="email"
               inputMode="email"
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
             />
-          </div>
+          </Field>
           {mode !== 'reset' && (
-            <div className="field">
-              <div className="label-row">
-                <label htmlFor={ids.password} className="label">
-                  {t('password')}
-                </label>
+            <Field>
+              <div className="flex items-center justify-between gap-2">
+                <Label htmlFor={ids.password}>{t('password')}</Label>
                 {mode === 'signIn' && (
-                  <button type="button" className="link link--sm" onClick={() => switchMode('reset')}>
+                  <Button type="button" variant="link" size="xs" onClick={() => switchMode('reset')}>
                     {t('forgotPassword')}
-                  </button>
+                  </Button>
                 )}
               </div>
-              <div className="input-wrap">
-                <input
+              <div className="relative">
+                <Input
                   id={ids.password}
                   type={showPassword ? 'text' : 'password'}
-                  className="input"
+                  className="pr-10"
                   autoComplete={mode === 'signIn' ? 'current-password' : 'new-password'}
                   required
                   minLength={6}
@@ -122,62 +125,60 @@ export function AuthDialog({ open, onClose, auth }: { open: boolean; onClose: ()
                   aria-describedby={mode === 'signUp' ? `${ids.password}-hint` : undefined}
                   onChange={(e) => setPassword(e.target.value)}
                 />
-                <button
+                <Button
                   type="button"
-                  className="input-wrap__btn icon-btn"
+                  variant="ghost"
+                  size="icon-sm"
+                  className="absolute top-0.5 right-0.5 text-muted-foreground"
                   aria-label={showPassword ? t('hidePassword') : t('showPassword')}
                   aria-pressed={showPassword}
                   onClick={() => setShowPassword((s) => !s)}
                 >
-                  <Icon name={showPassword ? 'eyeOff' : 'eye'} />
-                </button>
+                  {showPassword ? <EyeOff /> : <Eye />}
+                </Button>
               </div>
-              {mode === 'signUp' && (
-                <p id={`${ids.password}-hint`} className="hint">
-                  {t('passwordHint')}
-                </p>
-              )}
-            </div>
+              {mode === 'signUp' && <FieldMessage id={`${ids.password}-hint`}>{t('passwordHint')}</FieldMessage>}
+            </Field>
           )}
 
           {error && (
-            <p className="alert alert--error" role="alert">
-              {error}
-            </p>
+            <Alert variant="destructive" role="alert">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
           )}
           {info && (
-            <p className="alert alert--ok" role="status">
-              {info}
-            </p>
+            <Alert variant="success" role="status">
+              <AlertDescription>{info}</AlertDescription>
+            </Alert>
           )}
 
-          <button type="submit" className="btn btn--primary btn--lg btn--block" disabled={busy !== null}>
-            {busy === 'email' && <span className="spinner" aria-hidden="true" />}
+          <Button type="submit" size="lg" className="w-full" disabled={busy !== null}>
+            {busy === 'email' && <LoaderCircle className="animate-spin" aria-hidden="true" />}
             {mode === 'reset' ? t('sendReset') : mode === 'signUp' ? t('createAccountButton') : t('signInButton')}
-          </button>
+          </Button>
         </form>
 
-        <p className="center muted">
+        <p className="text-center text-sm text-muted-foreground">
           {mode === 'signIn' && (
             <>
               {t('noAccount')}{' '}
-              <button type="button" className="link" onClick={() => switchMode('signUp')}>
+              <Button type="button" variant="link" onClick={() => switchMode('signUp')}>
                 {t('createAccount')}
-              </button>
+              </Button>
             </>
           )}
           {mode === 'signUp' && (
             <>
               {t('haveAccount')}{' '}
-              <button type="button" className="link" onClick={() => switchMode('signIn')}>
+              <Button type="button" variant="link" onClick={() => switchMode('signIn')}>
                 {t('signInButton')}
-              </button>
+              </Button>
             </>
           )}
           {mode === 'reset' && (
-            <button type="button" className="link" onClick={() => switchMode('signIn')}>
+            <Button type="button" variant="link" onClick={() => switchMode('signIn')}>
               {t('backToSignIn')}
-            </button>
+            </Button>
           )}
         </p>
       </div>

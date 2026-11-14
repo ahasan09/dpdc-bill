@@ -72,6 +72,7 @@ src/lib/firebase.ts    Lazy, optional Firebase setup
 src/lib/i18n.tsx       English and Bangla text, date and number formatting
 src/hooks/             useAuth, useUserData, useTheme, useOnline
 src/components/        CheckBillCard, AccountsCard, HistoryCard, ReminderCard, AuthDialog, Header, ...
+src/components/ui/     shadcn/ui primitives (Radix + Tailwind CSS v4); add more with `npx shadcn@latest add <name>`
 ```
 
 ## Disclaimer
