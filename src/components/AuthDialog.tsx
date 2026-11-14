@@ -63,7 +63,7 @@ export function AuthDialog({ open, onClose, auth }: { open: boolean; onClose: ()
 
   return (
     <Dialog open={open} onClose={onClose} title={title} subtitle={mode === 'reset' ? undefined : t('authSubtitle')}>
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-4">
         {mode !== 'reset' && (
           <>
             <Button
@@ -84,7 +84,7 @@ export function AuthDialog({ open, onClose, auth }: { open: boolean; onClose: ()
           </>
         )}
 
-        <form className="grid gap-4" onSubmit={submit} noValidate>
+        <form className="grid grid-cols-1 gap-4" onSubmit={submit} noValidate>
           {mode === 'signUp' && (
             <Field>
               <Label htmlFor={ids.name}>{t('name')}</Label>

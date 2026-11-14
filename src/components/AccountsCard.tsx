@@ -68,7 +68,7 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
       {data.accounts.length === 0 ? (
         <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">{t('noAccounts')}</p>
       ) : (
-        <ul className="-mx-2 grid">
+        <ul className="-mx-2 grid grid-cols-1">
           {data.accounts.map((a) => {
             const isDefault = a.id === data.defaultAccountId
             const now = latestBillPeriod() // newest e-bill that should exist
@@ -92,8 +92,8 @@ export function AccountsCard({ data, update }: { data: UserData; update: Update 
                     <Star />
                   </Button>
                 )}
-                <p className="flex min-w-0 flex-1 items-baseline gap-2">
-                  <span className="truncate text-sm font-medium" title={accountLabel(a, t)}>
+                <p className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-baseline sm:gap-2">
+                  <span className="min-w-0 truncate text-sm font-medium" title={accountLabel(a, t)}>
                     {accountLabel(a, t)}
                   </span>
                   <span className="shrink-0 font-mono text-xs text-muted-foreground">{a.customerNo}</span>
@@ -212,7 +212,7 @@ function AccountDialog({
 
   return (
     <Dialog open={account !== null} onClose={onClose} title={editing ? t('editTitle') : t('addTitle')}>
-      <form className="grid gap-4" onSubmit={submit} noValidate>
+      <form className="grid grid-cols-1 gap-4" onSubmit={submit} noValidate>
         <Field>
           <Label htmlFor={ids.cno}>{t('customerNo')}</Label>
           <Input

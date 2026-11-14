@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 
 /** A label, control and message stacked with consistent spacing. */
 function Field({ className, ...props }: ComponentProps<'div'>) {
-  return <div data-slot="field" className={cn('grid gap-1.5', className)} {...props} />
+  return <div data-slot="field" className={cn('grid grid-cols-1 gap-1.5', className)} {...props} />
 }
 
 /** Help or error text under a control. */

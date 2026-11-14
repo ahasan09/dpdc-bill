@@ -176,7 +176,7 @@ export function CheckBillCard({
     <Card
       id="check"
       aria-labelledby="check-title"
-      className="relative scroll-mt-32 gap-5 overflow-hidden border-primary/15 p-5 shadow-md sm:p-6"
+      className="relative scroll-mt-32 gap-5 overflow-hidden border-primary/15 p-4 shadow-md sm:p-6"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-linear-to-r from-primary via-primary/70 to-gold" aria-hidden="true" />
       <CardHeader>
@@ -188,9 +188,9 @@ export function CheckBillCard({
         </CardTitle>
       </CardHeader>
 
-      <form className="grid gap-5" onSubmit={(e) => e.preventDefault()} noValidate>
+      <form className="grid grid-cols-1 gap-5" onSubmit={(e) => e.preventDefault()} noValidate>
         {/* Customer number */}
-        <fieldset className="grid gap-2.5">
+        <fieldset className="grid grid-cols-1 gap-2.5">
           <legend className="mb-2.5 text-sm font-medium">
             {data.accounts.length > 0 ? t('savedAccounts') : t('customerNo')}
           </legend>
@@ -223,7 +223,7 @@ export function CheckBillCard({
           )}
 
           {selected === NEW && (
-            <div className="grid gap-2.5">
+            <div className="grid grid-cols-1 gap-2.5">
               <Field>
                 {data.accounts.length > 0 && (
                   <Label htmlFor={ids.cno} className="text-xs text-muted-foreground">
@@ -285,7 +285,7 @@ export function CheckBillCard({
         </fieldset>
 
         {/* Bill type */}
-        <div className="grid gap-2">
+        <div className="grid grid-cols-1 gap-2">
           <ToggleGroup
             type="single"
             value={billType}
@@ -306,7 +306,7 @@ export function CheckBillCard({
         </div>
 
         {/* Period */}
-        <div className="grid gap-2" role="group" aria-label={t('billMonth')}>
+        <div className="grid grid-cols-1 gap-2" role="group" aria-label={t('billMonth')}>
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
@@ -321,7 +321,7 @@ export function CheckBillCard({
             >
               {t('latestBillChip', { month: monthName(latest.month) })}
             </Button>
-            <div className="ml-auto flex min-w-0 flex-1 gap-2 sm:max-w-xs">
+            <div className="flex w-full min-w-0 gap-2 sm:ml-auto sm:w-auto sm:max-w-xs sm:flex-1">
               <Select
                 value={String(period.month)}
                 onValueChange={(v) => {
@@ -372,7 +372,7 @@ export function CheckBillCard({
 
         {/* Options */}
         <Collapsible className="group/more">
-          <CollapsibleTrigger className="inline-flex items-center gap-1 rounded-md text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
+          <CollapsibleTrigger className="-my-1.5 inline-flex items-center gap-1 rounded-md py-1.5 text-sm font-medium text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/50">
             <ChevronDown className="size-4 transition-transform group-data-[state=open]/more:rotate-180" />
             {t('moreOptions')}
           </CollapsibleTrigger>

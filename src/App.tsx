@@ -140,8 +140,8 @@ export default function App() {
           </div>
 
           <TabsContent value="check">
-            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
-              <div className="grid gap-5">
+            <div className="grid grid-cols-1 items-start gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
+              <div className="grid grid-cols-1 gap-5">
                 {ready ? (
                   <CheckBillCard key={auth.state.user?.uid ?? 'guest'} data={data} update={update} />
                 ) : (
@@ -153,7 +153,7 @@ export default function App() {
                 </p>
               </div>
 
-              <div className="grid gap-5">
+              <div className="grid grid-cols-1 gap-5">
                 {showBanner && (
                   <Alert variant="info" className="relative pr-10">
                     <Cloud />
@@ -206,7 +206,7 @@ export default function App() {
       </main>
 
       <footer className="border-t">
-        <div className="mx-auto grid max-w-6xl gap-1.5 px-4 py-6 text-center text-xs text-muted-foreground">
+        <div className="mx-auto grid grid-cols-1 max-w-6xl gap-1.5 px-4 py-6 text-center text-xs text-muted-foreground">
           <p className="flex items-center justify-center gap-1.5">
             {auth.state.status === 'signedIn' ? <Cloud className="size-3.5" /> : <Smartphone className="size-3.5" />}
             {auth.state.status === 'signedIn'

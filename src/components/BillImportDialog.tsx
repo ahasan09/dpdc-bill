@@ -227,7 +227,7 @@ export function BillImportDialog({
       subtitle={editing || request === 'manual' ? undefined : t('importSubtitle')}
       wide
     >
-      <div className="grid min-w-0 gap-4">
+      <div className="grid grid-cols-1 min-w-0 gap-4">
         <datalist id="saved-numbers">
           {data.accounts.map((a) => (
             <option key={a.id} value={a.customerNo}>
@@ -236,7 +236,7 @@ export function BillImportDialog({
           ))}
         </datalist>
 
-        <div className="-mx-1 grid max-h-[min(60dvh,560px)] gap-3 overflow-auto px-1">
+        <div className="-mx-1 grid grid-cols-1 max-h-[min(60dvh,560px)] gap-3 overflow-auto px-1">
           {items.map((it) => (
             <ImportRow
               key={it.key}
@@ -335,7 +335,7 @@ function ImportRow({
   )
 
   return (
-    <div className={cn('grid min-w-0 gap-3 rounded-lg border bg-muted/40 p-3.5')}>
+    <div className={cn('grid grid-cols-1 min-w-0 gap-3 rounded-lg border bg-muted/40 p-3.5')}>
       {item.fileName && (
         <div className="flex min-w-0 items-center justify-between gap-2">
           <p className="min-w-0 truncate text-sm font-semibold" title={item.fileName}>

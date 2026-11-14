@@ -136,15 +136,21 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
       onDrop={onDrop}
     >
       <CardHeader>
-        <CardTitle id="bills-title" className="text-lg">
+        <CardTitle id="bills-title" className="text-lg whitespace-nowrap">
           {t('billsTitle')}
         </CardTitle>
         <div className="flex items-center gap-1.5">
           <Button variant="ghost" size="sm" title={t('addManually')} aria-label={t('addManually')} onClick={() => setRequest('manual')}>
             <Plus /> <span className="hidden sm:inline">{t('addManually')}</span>
           </Button>
-          <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()}>
-            <Upload /> {t('uploadBills')}
+          <Button
+            variant="secondary"
+            size="sm"
+            title={t('uploadBills')}
+            aria-label={t('uploadBills')}
+            onClick={() => fileRef.current?.click()}
+          >
+            <Upload /> <span className="hidden min-[400px]:inline">{t('uploadBills')}</span>
           </Button>
           <input
             ref={fileRef}
@@ -183,7 +189,7 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
               value={selected}
               onValueChange={(v) => v && setPicked(v)}
               aria-label={t('savedAccounts')}
-              className="w-auto max-w-full justify-start overflow-x-auto"
+              className="h-auto w-auto max-w-full flex-wrap justify-start"
             >
               {numbers.map((no) => (
                 <ToggleGroupItem key={no} value={no} className="flex-none">
@@ -229,13 +235,13 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                 <TableHead scope="col" className="text-right">
                   {t('amount')}
                 </TableHead>
-                <TableHead scope="col" className="hidden text-right md:table-cell">
+                <TableHead scope="col" className="hidden text-right lg:table-cell">
                   {t('lateAmountShort')}
                 </TableHead>
-                <TableHead scope="col" className="text-right">
+                <TableHead scope="col" className="hidden text-right sm:table-cell">
                   {t('units')}
                 </TableHead>
-                <TableHead scope="col" className="hidden text-right md:table-cell">
+                <TableHead scope="col" className="hidden text-right lg:table-cell">
                   {t('meterReading')}
                 </TableHead>
                 <TableHead scope="col" className="hidden md:table-cell">
@@ -255,29 +261,36 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                   <TableRow key={b.id} className={cn('group', status === 'paid' && 'text-muted-foreground')}>
                     <th scope="row" className="p-2 text-left font-medium whitespace-nowrap text-foreground">
                       <span className="hidden sm:inline">{formatPeriod(b.year, b.month)}</span>
-                      <span className="sm:hidden">{shortPeriod(b)}</span>
+                      <span className="sm:hidden">
+                        {shortMonth(b.month)}
+                        <span className="block text-xs font-normal text-muted-foreground">{formatNumber(b.year)}</span>
+                      </span>
                     </th>
                     <TableCell className="text-right font-medium text-foreground">
                       {b.amount != null ? formatMoney(b.amount) : '—'}
+                      {b.units != null && (
+                        <span className="block text-xs font-normal text-muted-foreground sm:hidden">{formatQuantity(b.units)} kWh</span>
+                      )}
                     </TableCell>
-                    <TableCell className="hidden text-right text-muted-foreground md:table-cell">
+                    <TableCell className="hidden text-right text-muted-foreground lg:table-cell">
                       {b.lateAmount != null ? formatMoney(b.lateAmount) : '—'}
                     </TableCell>
-                    <TableCell className="text-right">{b.units != null ? formatQuantity(b.units) : '—'}</TableCell>
-                    <TableCell className="hidden text-right text-muted-foreground md:table-cell">{readingText(b)}</TableCell>
+                    <TableCell className="hidden text-right sm:table-cell">{b.units != null ? formatQuantity(b.units) : '—'}</TableCell>
+                    <TableCell className="hidden text-right text-muted-foreground lg:table-cell">{readingText(b)}</TableCell>
                     <TableCell className="hidden md:table-cell">{b.dueDate ? formatDate(b.dueDate) : t('noDueDate')}</TableCell>
                     <TableCell>
                       <button
                         type="button"
-                        className="rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        className="-my-1.5 rounded-full py-1.5 outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
                         title={b.paidOn ? `${t('paidOn')} ${formatDate(b.paidOn)} · ${t('editPayment')}` : t('markPaid')}
                         aria-label={`${period}: ${t(status)}${b.paidOn ? `, ${t('paidOn')} ${formatDate(b.paidOn)}` : ''}. ${b.paidOn ? t('editPayment') : t('markPaid')}`}
                         onClick={() => setPaying(b)}
                       >
                         <Badge variant={statusVariant[status]} className="hover:brightness-95">
                           {status === 'paid' && <Check />}
-                          {t(status)}
-                          {b.paidOn && <span className="hidden md:inline"> · {formatDate(b.paidOn)}</span>}
+                          {/* Phones show only the tick for paid bills; the button's label still says "paid". */}
+                          <span className={cn(status === 'paid' && 'max-sm:sr-only')}>{t(status)}</span>
+                          {b.paidOn && <span className="hidden lg:inline"> · {formatDate(b.paidOn)}</span>}
                         </Badge>
                       </button>
                     </TableCell>
@@ -380,10 +393,10 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
 
 function Stat({ label, value, meta, highlight }: { label: string; value: string; meta?: string | null; highlight?: boolean }) {
   return (
-    <div className={cn('min-w-0 rounded-lg border p-3', highlight ? 'border-primary/20 bg-secondary/60' : 'bg-muted/40')}>
-      <dt className="truncate text-xs text-muted-foreground">{label}</dt>
-      <dd className="mt-1 text-base font-semibold tabular sm:text-xl">
-        <span className="block truncate">{value}</span>
+    <div className={cn('min-w-0 rounded-lg border p-2.5 sm:p-3', highlight ? 'border-primary/20 bg-secondary/60' : 'bg-muted/40')}>
+      <dt className="text-xs leading-tight text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-sm font-semibold tabular min-[400px]:text-base sm:text-xl">
+        <span className="block">{value}</span>
         {meta && <span className="block text-xs font-normal text-muted-foreground">{meta}</span>}
       </dd>
     </div>

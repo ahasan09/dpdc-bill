@@ -33,7 +33,7 @@ export function GoldCard() {
           {t('goldTitle')}
         </CardTitle>
         <a
-          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          className="-my-1.5 inline-flex items-center gap-1 py-1.5 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
           href={loaded?.source ?? BAJUS_URL}
           target="_blank"
           rel="noopener noreferrer"

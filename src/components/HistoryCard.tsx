@@ -35,7 +35,7 @@ export function HistoryCard({ data, update }: { data: UserData; update: (fn: (d:
       {data.history.length === 0 ? (
         <p className="rounded-lg border border-dashed px-4 py-6 text-center text-sm text-muted-foreground">{t('noHistory')}</p>
       ) : (
-        <ul className="-mx-2 grid">
+        <ul className="-mx-2 grid grid-cols-1">
           {[...data.history]
             .sort((a, b) => b.year * 12 + b.month - (a.year * 12 + a.month) || b.checkedAt - a.checkedAt)
             .map((h) => {
@@ -58,10 +58,14 @@ export function HistoryCard({ data, update }: { data: UserData; update: (fn: (d:
                     }}
                   >
                     <Clock className="size-3.5 shrink-0 text-muted-foreground" />
-                    <span className={cn('min-w-0 truncate font-medium', !name && 'font-mono')}>{name || h.customerNo}</span>
-                    <Badge variant="muted">{type}</Badge>
-                    <span className="ml-auto shrink-0 text-xs text-muted-foreground tabular">
-                      {shortMonth(h.month)} {formatNumber(h.year)} · {relativeTime(h.checkedAt)}
+                    <span className="flex min-w-0 flex-1 flex-col sm:flex-row sm:items-center sm:gap-2.5">
+                      <span className="flex min-w-0 items-center gap-2">
+                        <span className={cn('min-w-0 truncate font-medium', !name && 'font-mono')}>{name || h.customerNo}</span>
+                        <Badge variant="muted">{type}</Badge>
+                      </span>
+                      <span className="text-xs text-muted-foreground tabular sm:ml-auto sm:shrink-0">
+                        {shortMonth(h.month)} {formatNumber(h.year)} · {relativeTime(h.checkedAt)}
+                      </span>
                     </span>
                     <ExternalLink className="size-3.5 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100" />
                   </a>
