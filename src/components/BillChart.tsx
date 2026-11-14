@@ -2,6 +2,7 @@ import { useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { shiftPeriod } from '../lib/dpdc'
 import { useI18n } from '../lib/i18n'
 import type { BillSummary } from '../lib/userData'
+import { cn } from '@/lib/utils'
 
 const HEIGHT = 124
 const PAD = { top: 18, right: 4, bottom: 20, left: 40 }
@@ -68,8 +69,9 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
   const hovered = hover !== null ? slots[hover] : null
 
   return (
-    <div className="chart" ref={wrapRef}>
+    <div className="relative -mx-1 rounded-lg" ref={wrapRef}>
       <svg
+        className="block overflow-visible"
         width={width}
         height={HEIGHT}
         role="img"
@@ -81,8 +83,8 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
       >
         {ticks.map((v) => (
           <g key={v}>
-            <line className={v === 0 ? 'chart__base' : 'chart__grid'} x1={PAD.left} x2={width - PAD.right} y1={y(v)} y2={y(v)} />
-            <text className="chart__tick" x={PAD.left - 6} y={y(v)} dy="0.32em" textAnchor="end">
+            <line className={v === 0 ? 'stroke-border' : 'stroke-border/60 [stroke-dasharray:3_3]'} x1={PAD.left} x2={width - PAD.right} y1={y(v)} y2={y(v)} />
+            <text className="pointer-events-none fill-muted-foreground text-[11px] tabular" x={PAD.left - 6} y={y(v)} dy="0.32em" textAnchor="end">
               {compact(v, formatNumber)}
             </text>
           </g>
@@ -96,7 +98,7 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
             <g key={`${s.year}-${s.month}`}>
               {/* hit target: the whole column, bigger than the bar */}
               <rect
-                className="chart__hit"
+                className="fill-transparent"
                 x={PAD.left + band * i}
                 y={PAD.top}
                 width={band}
@@ -106,16 +108,16 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
               />
               {amount ? (
                 <path
-                  className={`chart__bar ${hover !== null && hover !== i ? 'is-dim' : ''}`}
+                  className={cn('pointer-events-none fill-chart-1 transition-opacity duration-150', hover !== null && hover !== i && 'opacity-45')}
                   d={roundedTop(cx - barW / 2, y(amount), barW, h, Math.min(4, barW / 2))}
                 />
               ) : null}
               {amount && labelled.has(i) ? (
-                <text className="chart__value" x={cx} y={y(amount) - 6} textAnchor="middle">
+                <text className="pointer-events-none fill-muted-foreground text-[11.5px] font-semibold tabular" x={cx} y={y(amount) - 6} textAnchor="middle">
                   {formatMoney(Math.round(amount))}
                 </text>
               ) : null}
-              <text className="chart__tick" x={cx} y={HEIGHT - PAD.bottom + 14} textAnchor="middle">
+              <text className="pointer-events-none fill-muted-foreground text-[11px] tabular" x={cx} y={HEIGHT - PAD.bottom + 14} textAnchor="middle">
                 {band < 30 ? shortMonth(s.month).slice(0, 1) : shortMonth(s.month)}
                 {showYear && band >= 30 ? ` ${formatNumber(s.year).slice(-2)}` : ''}
               </text>
@@ -125,7 +127,7 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
       </svg>
       {hovered && hover !== null && (
         <div
-          className="chart__tip"
+          className="pointer-events-none absolute z-10 grid min-w-32 -translate-x-1/2 -translate-y-full gap-0.5 rounded-lg border bg-popover px-3 py-2 text-xs text-popover-foreground shadow-lg whitespace-nowrap tabular"
           style={{
             left: Math.min(Math.max(PAD.left + band * hover + band / 2, 70), width - 70),
             top: hovered.bill?.amount ? Math.max(0, y(hovered.bill.amount) - 8) : PAD.top,
@@ -136,13 +138,13 @@ export function BillChart({ bills }: { bills: BillSummary[] }) {
             <>
               <span>{hovered.bill.amount != null ? formatMoney(hovered.bill.amount) : '—'}</span>
               {hovered.bill.lateAmount != null && (
-                <span className="chart__tip-muted">
+                <span className="text-muted-foreground">
                   {t('lateAmountShort')}: {formatMoney(hovered.bill.lateAmount)}
                 </span>
               )}
               {hovered.bill.units != null && <span>{formatQuantity(hovered.bill.units)} kWh</span>}
               {hovered.bill.presentReading != null && hovered.bill.previousReading != null && (
-                <span className="chart__tip-muted">
+                <span className="text-muted-foreground">
                   {t('meterReading')}: {formatQuantity(hovered.bill.previousReading)} → {formatQuantity(hovered.bill.presentReading)}
                 </span>
               )}

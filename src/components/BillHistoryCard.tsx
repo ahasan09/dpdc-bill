@@ -1,3 +1,4 @@
+import { Check, Lock, Pencil, Plus, ShieldCheck, Trash2, Upload } from 'lucide-react'
 import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { useI18n } from '../lib/i18n'
 import { accountLabel } from '../lib/labels'
@@ -16,9 +17,16 @@ import {
 } from '../lib/userData'
 import { BillChart } from './BillChart'
 import { BillImportDialog, type NewBill } from './BillImportDialog'
-import { Icon } from './Icon'
+import { cn } from '@/lib/utils'
 import { PaymentDialog } from './PaymentDialog'
 import { useToast } from './Toast'
+import { Badge } from './ui/badge'
+import { Button } from './ui/button'
+import { Card, CardHeader, CardTitle } from './ui/card'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
+import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
+
+const statusVariant = { paid: 'success', unpaid: 'warning', overdue: 'destructive' } as const
 
 type Update = (fn: (d: UserData) => UserData) => void
 
@@ -112,8 +120,8 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
   }
 
   return (
-    <section
-      className={`card bills ${dragging ? 'is-dragging' : ''}`}
+    <Card
+      className={cn('relative', dragging && 'ring-2 ring-primary ring-offset-2 ring-offset-background')}
       aria-labelledby="bills-title"
       onDragOver={(e) => {
         if ([...e.dataTransfer.types].includes('Files')) {
@@ -126,23 +134,17 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
       }}
       onDrop={onDrop}
     >
-      <div className="card__head">
-        <h2 id="bills-title" className="card__title">
+      <CardHeader>
+        <CardTitle id="bills-title" className="text-lg">
           {t('billsTitle')}
-        </h2>
-        <div className="card__tools">
-          <button
-            type="button"
-            className="btn btn--ghost btn--sm"
-            title={t('addManually')}
-            aria-label={t('addManually')}
-            onClick={() => setRequest('manual')}
-          >
-            <Icon name="plus" size={15} /> <span className="hide-sm">{t('addManually')}</span>
-          </button>
-          <button type="button" className="btn btn--soft btn--sm" onClick={() => fileRef.current?.click()}>
-            <Icon name="upload" size={15} /> {t('uploadBills')}
-          </button>
+        </CardTitle>
+        <div className="flex items-center gap-1.5">
+          <Button variant="ghost" size="sm" title={t('addManually')} aria-label={t('addManually')} onClick={() => setRequest('manual')}>
+            <Plus /> <span className="hidden sm:inline">{t('addManually')}</span>
+          </Button>
+          <Button variant="secondary" size="sm" onClick={() => fileRef.current?.click()}>
+            <Upload /> {t('uploadBills')}
+          </Button>
           <input
             ref={fileRef}
             type="file"
@@ -155,166 +157,184 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
             }}
           />
         </div>
-      </div>
+      </CardHeader>
 
       {numbers.length === 0 ? (
-        <button type="button" className="dropzone" onClick={() => fileRef.current?.click()}>
-          <Icon name="upload" size={22} />
-          <span className="dropzone__title">{t('uploadBills')}</span>
-          <span className="dropzone__body">{t('billsEmpty')}</span>
-          <span className="dropzone__note">
-            <Icon name="shield" size={14} /> {t('billsPrivacy')}
+        <button
+          type="button"
+          className="flex flex-col items-center gap-2 rounded-xl border-2 border-dashed bg-muted/40 px-6 py-10 text-center outline-none transition-colors hover:border-primary/50 hover:bg-secondary/50 focus-visible:ring-[3px] focus-visible:ring-ring/50"
+          onClick={() => fileRef.current?.click()}
+        >
+          <span className="grid size-11 place-items-center rounded-full bg-secondary text-primary">
+            <Upload className="size-5" />
+          </span>
+          <span className="font-semibold">{t('uploadBills')}</span>
+          <span className="max-w-md text-sm text-muted-foreground">{t('billsEmpty')}</span>
+          <span className="mt-1 inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+            <ShieldCheck className="size-3.5 text-success" /> {t('billsPrivacy')}
           </span>
         </button>
       ) : (
         <>
           {numbers.length > 1 && (
-            <div className="chips chips--tight" role="tablist" aria-label={t('savedAccounts')}>
+            <ToggleGroup
+              type="single"
+              value={selected}
+              onValueChange={(v) => v && setPicked(v)}
+              aria-label={t('savedAccounts')}
+              className="w-auto max-w-full justify-start overflow-x-auto"
+            >
               {numbers.map((no) => (
-                <button
-                  key={no}
-                  type="button"
-                  role="tab"
-                  aria-selected={no === selected}
-                  className={`chip ${no === selected ? 'is-on' : ''}`}
-                  onClick={() => setPicked(no)}
-                >
+                <ToggleGroupItem key={no} value={no} className="flex-none">
                   {nameFor(no)}
-                </button>
+                </ToggleGroupItem>
               ))}
-            </div>
+            </ToggleGroup>
           )}
 
-          <dl className="stats">
-            <div className="stat">
-              <dt className="stat__label">{t('latestBill')}</dt>
-              <dd className="stat__value">
-                {latest?.amount != null ? formatMoney(latest.amount) : '—'}
-                {latest && <span className="stat__meta">{shortPeriod(latest)}</span>}
-              </dd>
-            </div>
-            <div className="stat">
-              <dt className="stat__label">{t('average', { n: recent.length })}</dt>
-              <dd className="stat__value">{average !== null ? formatMoney(Math.round(average)) : '—'}</dd>
-            </div>
-            <div className="stat">
-              <dt className="stat__label">{t('highest')}</dt>
-              <dd className="stat__value">
-                {highest?.amount != null ? formatMoney(highest.amount) : '—'}
-                {highest && <span className="stat__meta">{shortPeriod(highest)}</span>}
-              </dd>
-            </div>
+          <dl className="grid grid-cols-3 gap-2 sm:gap-3">
+            <Stat
+              label={t('latestBill')}
+              value={latest?.amount != null ? formatMoney(latest.amount) : '—'}
+              meta={latest && shortPeriod(latest)}
+              highlight
+            />
+            <Stat label={t('average', { n: recent.length })} value={average !== null ? formatMoney(Math.round(average)) : '—'} />
+            <Stat
+              label={t('highest')}
+              value={highest?.amount != null ? formatMoney(highest.amount) : '—'}
+              meta={highest && shortPeriod(highest)}
+            />
           </dl>
 
           {recent.length > 1 && <BillChart bills={bills} />}
 
           {unpaid.length > 0 && unpaidTotal > 0 && (
-            <p className={`unpaid-note ${anyOverdue ? 'is-overdue' : ''}`} role="status">
+            <p
+              className={cn(
+                'rounded-lg px-3 py-2 text-sm font-medium',
+                anyOverdue ? 'bg-destructive/10 text-destructive' : 'bg-warning-soft text-warning',
+              )}
+              role="status"
+            >
               {t('unpaidSummary', { count: unpaid.length, amount: formatMoney(unpaidTotal) })}
             </p>
           )}
 
-          <table className="bill-table">
-            <thead>
-              <tr>
-                <th scope="col">{t('billMonth')}</th>
-                <th scope="col" className="num">
+          <Table className="tabular">
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead scope="col">{t('billMonth')}</TableHead>
+                <TableHead scope="col" className="text-right">
                   {t('amount')}
-                </th>
-                <th scope="col" className="num hide-sm">
+                </TableHead>
+                <TableHead scope="col" className="hidden text-right md:table-cell">
                   {t('lateAmountShort')}
-                </th>
-                <th scope="col" className="num">
+                </TableHead>
+                <TableHead scope="col" className="text-right">
                   {t('units')}
-                </th>
-                <th scope="col" className="num hide-sm">
+                </TableHead>
+                <TableHead scope="col" className="hidden text-right md:table-cell">
                   {t('meterReading')}
-                </th>
-                <th scope="col" className="hide-sm">
+                </TableHead>
+                <TableHead scope="col" className="hidden md:table-cell">
                   {t('dueDate')}
-                </th>
-                <th scope="col">{t('status')}</th>
-                <th scope="col">
+                </TableHead>
+                <TableHead scope="col">{t('status')}</TableHead>
+                <TableHead scope="col">
                   <span className="sr-only">{t('edit')}</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
               {bills.map((b) => {
                 const status = billStatus(b, today)
                 const period = formatPeriod(b.year, b.month)
                 return (
-                <tr key={b.id} className={status === 'paid' ? 'is-paid' : undefined}>
-                  <th scope="row">
-                    <span className="hide-xs">{formatPeriod(b.year, b.month)}</span>
-                    <span className="show-xs">{shortPeriod(b)}</span>
-                  </th>
-                  <td className="num">{b.amount != null ? formatMoney(b.amount) : '—'}</td>
-                  <td className="num hide-sm muted">{b.lateAmount != null ? formatMoney(b.lateAmount) : '—'}</td>
-                  <td className="num">{b.units != null ? formatQuantity(b.units) : '—'}</td>
-                  <td className="num hide-sm muted">{readingText(b)}</td>
-                  <td className="hide-sm">{b.dueDate ? formatDate(b.dueDate) : t('noDueDate')}</td>
-                  <td>
-                    <button
-                      type="button"
-                      className={`badge badge--btn badge--${status}`}
-                      title={b.paidOn ? `${t('paidOn')} ${formatDate(b.paidOn)} · ${t('editPayment')}` : t('markPaid')}
-                      aria-label={`${period}: ${t(status)}${b.paidOn ? `, ${t('paidOn')} ${formatDate(b.paidOn)}` : ''}. ${b.paidOn ? t('editPayment') : t('markPaid')}`}
-                      onClick={() => setPaying(b)}
-                    >
-                      {t(status)}
-                      {b.paidOn && <span className="hide-sm"> · {formatDate(b.paidOn)}</span>}
-                    </button>
-                  </td>
-                  <td className="actions-cell">
-                    {b.paidOn ? (
-                      <span className="lock-note" title={t('paidLockedNote')}>
-                        <Icon name="lock" size={14} />
-                        <span className="sr-only">{t('paidLockedNote')}</span>
-                      </span>
-                    ) : (
-                      <>
-                        <button
-                          type="button"
-                          className="icon-btn icon-btn--ok"
-                          title={t('markPaid')}
-                          aria-label={`${t('markPaid')}: ${period}`}
-                          onClick={() => setPaying(b)}
-                        >
-                          <Icon name="check" size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          className="icon-btn"
-                          title={t('editBill')}
-                          aria-label={`${t('editBill')}: ${period}`}
-                          onClick={() => setRequest({ edit: b })}
-                        >
-                          <Icon name="edit" size={15} />
-                        </button>
-                        <button
-                          type="button"
-                          className="icon-btn icon-btn--danger"
-                          title={t('deleteBill')}
-                          aria-label={`${t('deleteBill')}: ${period}`}
-                          onClick={() => remove(b)}
-                        >
-                          <Icon name="trash" size={15} />
-                        </button>
-                      </>
-                    )}
-                  </td>
-                </tr>
+                  <TableRow key={b.id} className={cn('group', status === 'paid' && 'text-muted-foreground')}>
+                    <th scope="row" className="p-2 text-left font-medium text-foreground">
+                      <span className="hidden sm:inline">{formatPeriod(b.year, b.month)}</span>
+                      <span className="sm:hidden">{shortPeriod(b)}</span>
+                    </th>
+                    <TableCell className="text-right font-medium text-foreground">
+                      {b.amount != null ? formatMoney(b.amount) : '—'}
+                    </TableCell>
+                    <TableCell className="hidden text-right text-muted-foreground md:table-cell">
+                      {b.lateAmount != null ? formatMoney(b.lateAmount) : '—'}
+                    </TableCell>
+                    <TableCell className="text-right">{b.units != null ? formatQuantity(b.units) : '—'}</TableCell>
+                    <TableCell className="hidden text-right text-muted-foreground md:table-cell">{readingText(b)}</TableCell>
+                    <TableCell className="hidden md:table-cell">{b.dueDate ? formatDate(b.dueDate) : t('noDueDate')}</TableCell>
+                    <TableCell>
+                      <button
+                        type="button"
+                        className="rounded-full outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                        title={b.paidOn ? `${t('paidOn')} ${formatDate(b.paidOn)} · ${t('editPayment')}` : t('markPaid')}
+                        aria-label={`${period}: ${t(status)}${b.paidOn ? `, ${t('paidOn')} ${formatDate(b.paidOn)}` : ''}. ${b.paidOn ? t('editPayment') : t('markPaid')}`}
+                        onClick={() => setPaying(b)}
+                      >
+                        <Badge variant={statusVariant[status]} className="hover:brightness-95">
+                          {status === 'paid' && <Check />}
+                          {t(status)}
+                          {b.paidOn && <span className="hidden md:inline"> · {formatDate(b.paidOn)}</span>}
+                        </Badge>
+                      </button>
+                    </TableCell>
+                    <TableCell className="w-0 text-right">
+                      {b.paidOn ? (
+                        <span className="inline-grid size-8 place-items-center text-muted-foreground/70" title={t('paidLockedNote')}>
+                          <Lock className="size-3.5" />
+                          <span className="sr-only">{t('paidLockedNote')}</span>
+                        </span>
+                      ) : (
+                        <div className="flex justify-end gap-0.5">
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-success hover:bg-success-soft hover:text-success"
+                            title={t('markPaid')}
+                            aria-label={`${t('markPaid')}: ${period}`}
+                            onClick={() => setPaying(b)}
+                          >
+                            <Check />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-muted-foreground"
+                            title={t('editBill')}
+                            aria-label={`${t('editBill')}: ${period}`}
+                            onClick={() => setRequest({ edit: b })}
+                          >
+                            <Pencil />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+                            title={t('deleteBill')}
+                            aria-label={`${t('deleteBill')}: ${period}`}
+                            onClick={() => remove(b)}
+                          >
+                            <Trash2 />
+                          </Button>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
                 )
               })}
-            </tbody>
-          </table>
+            </TableBody>
+          </Table>
         </>
       )}
 
       {dragging && (
-        <div className="drop-overlay" aria-hidden="true">
-          <Icon name="upload" size={24} /> {t('dropHere')}
+        <div
+          className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-xl bg-background/85 text-base font-semibold text-primary backdrop-blur-sm"
+          aria-hidden="true"
+        >
+          <Upload className="size-6" /> {t('dropHere')}
         </div>
       )}
 
@@ -327,6 +347,18 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
         onClose={() => setRequest(null)}
         onSave={save}
       />
-    </section>
+    </Card>
+  )
+}
+
+function Stat({ label, value, meta, highlight }: { label: string; value: string; meta?: string | null; highlight?: boolean }) {
+  return (
+    <div className={cn('min-w-0 rounded-lg border p-3', highlight ? 'border-primary/20 bg-secondary/60' : 'bg-muted/40')}>
+      <dt className="truncate text-xs text-muted-foreground">{label}</dt>
+      <dd className="mt-1 text-base font-semibold tabular sm:text-xl">
+        <span className="block truncate">{value}</span>
+        {meta && <span className="block text-xs font-normal text-muted-foreground">{meta}</span>}
+      </dd>
+    </div>
   )
 }

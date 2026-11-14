@@ -1,9 +1,14 @@
+import { CalendarPlus } from 'lucide-react'
 import { useId, useState } from 'react'
 import { buildReminderIcs, downloadFile } from '../lib/calendar'
 import { BILL_READY_DAY } from '../lib/dpdc'
 import { useI18n } from '../lib/i18n'
-import { Icon } from './Icon'
 import { useToast } from './Toast'
+import { Button } from './ui/button'
+import { Card, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { Field } from './ui/field'
+import { Label } from './ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select'
 
 const KEY = 'dpdc-bill-check:reminder-day'
 
@@ -36,30 +41,33 @@ export function ReminderCard() {
   }
 
   return (
-    <section className="card" aria-labelledby="reminder-title">
-      <div className="card__head">
-        <h2 id="reminder-title" className="card__title">
-          {t('reminderTitle')}
-        </h2>
-      </div>
-      <p className="muted">{t('reminderBody')}</p>
-      <div className="row row--end">
-        <div className="field grow">
-          <label htmlFor={id} className="label label--sub">
+    <Card aria-labelledby="reminder-title">
+      <CardHeader>
+        <CardTitle id="reminder-title">{t('reminderTitle')}</CardTitle>
+      </CardHeader>
+      <CardDescription className="-mt-2">{t('reminderBody')}</CardDescription>
+      <div className="flex items-end gap-2">
+        <Field className="flex-1">
+          <Label htmlFor={id} className="text-xs text-muted-foreground">
             {t('reminderDay')}
-          </label>
-          <select id={id} className="input" value={day} onChange={(e) => setDay(Number(e.target.value))}>
-            {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
-              <option key={d} value={d}>
-                {formatNumber(d)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button type="button" className="btn btn--soft" onClick={add}>
-          <Icon name="calendar" /> {t('reminderButton')}
-        </button>
+          </Label>
+          <Select value={String(day)} onValueChange={(v) => setDay(Number(v))}>
+            <SelectTrigger id={id}>
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {Array.from({ length: 28 }, (_, i) => i + 1).map((d) => (
+                <SelectItem key={d} value={String(d)}>
+                  {formatNumber(d)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        <Button variant="secondary" onClick={add}>
+          <CalendarPlus /> {t('reminderButton')}
+        </Button>
       </div>
-    </section>
+    </Card>
   )
 }

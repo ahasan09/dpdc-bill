@@ -1,7 +1,9 @@
+import { Coins, ExternalLink } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { BAJUS_URL, sanitizeGoldPrices, type GoldPrices } from '../lib/gold'
 import { useI18n } from '../lib/i18n'
-import { Icon } from './Icon'
+import { Card, CardHeader, CardTitle } from './ui/card'
+import { Skeleton } from './ui/skeleton'
 
 /** Gold prices per vori in Bangladesh, from gold.json (kept up to date by scripts/sync-gold.sh). */
 export function GoldCard() {
@@ -22,34 +24,48 @@ export function GoldCard() {
   const loaded = gold !== null && gold !== 'error' ? gold : null
 
   return (
-    <section className="card gold" aria-labelledby="gold-title" aria-busy={gold === null}>
-      <div className="card__head">
-        <h2 id="gold-title" className="card__title">
+    <Card aria-labelledby="gold-title" aria-busy={gold === null}>
+      <CardHeader>
+        <CardTitle id="gold-title">
+          <span className="grid size-7 place-items-center rounded-md bg-gold-soft text-gold" aria-hidden="true">
+            <Coins className="size-4" />
+          </span>
           {t('goldTitle')}
-        </h2>
-        <a className="link gold__source" href={loaded?.source ?? BAJUS_URL} target="_blank" rel="noopener noreferrer">
-          BAJUS <Icon name="external" size={13} />
+        </CardTitle>
+        <a
+          className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+          href={loaded?.source ?? BAJUS_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          BAJUS <ExternalLink className="size-3" />
         </a>
-      </div>
+      </CardHeader>
       {gold === 'error' ? (
-        <p className="muted">{t('goldError')}</p>
+        <p className="text-sm text-muted-foreground">{t('goldError')}</p>
       ) : (
         <>
-          <dl className="gold__grid">
+          <dl className="grid grid-cols-2 gap-3">
             {(loaded?.prices ?? [{ karat: 22 }, { karat: 21 }]).map((p) => (
-              <div key={p.karat} className="gold__item">
-                <dt className="gold__karat">{t('goldKarat', { karat: formatNumber(p.karat) })}</dt>
-                <dd className="gold__price">
-                  {'perVori' in p ? formatMoney(p.perVori) : '—'}
-                  <span className="gold__unit">{t('goldPerVori')}</span>
+              <div key={p.karat} className="rounded-lg border bg-linear-to-br from-gold-soft/70 to-transparent p-3.5">
+                <dt className="text-xs font-semibold tracking-wide text-gold uppercase">
+                  {t('goldKarat', { karat: formatNumber(p.karat) })}
+                </dt>
+                <dd className="mt-1 flex items-baseline gap-1.5 text-xl font-semibold tabular sm:text-2xl">
+                  {'perVori' in p ? formatMoney(p.perVori) : <Skeleton className="h-7 w-28" />}
+                  <span className="text-xs font-normal text-muted-foreground">{t('goldPerVori')}</span>
                 </dd>
-                <dd className="gold__meta">{'perGram' in p ? t('goldPerGram', { price: formatMoney(p.perGram) }) : ' '}</dd>
+                <dd className="mt-0.5 min-h-4 text-xs text-muted-foreground tabular">
+                  {'perGram' in p ? t('goldPerGram', { price: formatMoney(p.perGram) }) : ''}
+                </dd>
               </div>
             ))}
           </dl>
-          <p className="gold__meta">{loaded ? t('goldSince', { date: formatDate(loaded.since.slice(0, 10)) }) : ' '}</p>
+          <p className="min-h-4 text-xs text-muted-foreground">
+            {loaded ? t('goldSince', { date: formatDate(loaded.since.slice(0, 10)) }) : ''}
+          </p>
         </>
       )}
-    </section>
+    </Card>
   )
 }
