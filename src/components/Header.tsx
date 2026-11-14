@@ -41,9 +41,10 @@ export function Header({
       <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 px-4">
         <a href="#check" className="flex items-center gap-2.5 rounded-md outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50">
           <span
-            className="grid size-8 place-items-center rounded-lg bg-linear-to-br from-primary to-primary/70 text-primary-foreground shadow-sm"
+            className="grid size-8 place-items-center rounded-lg bg-linear-to-br from-[#3a5cf0] to-[#1c34a8] text-[#ffd166] shadow-sm"
             aria-hidden="true"
           >
+            {/* Same tile and bolt colours as public/favicon.svg */}
             <Zap className="size-[18px] fill-current" />
           </span>
           <span className="flex flex-col leading-none">
