@@ -1,4 +1,4 @@
-import { Cloud, ExternalLink, ShieldCheck, Smartphone, WifiOff, X } from 'lucide-react'
+import { ChartColumn, Cloud, Coins, ExternalLink, ShieldCheck, Smartphone, WifiOff, X, Zap } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { AccountsCard } from './components/AccountsCard'
 import { AuthDialog } from './components/AuthDialog'
@@ -13,6 +13,7 @@ import { Alert, AlertDescription, AlertTitle } from './components/ui/alert'
 import { Button } from './components/ui/button'
 import { Skeleton } from './components/ui/skeleton'
 import { Toaster } from './components/ui/sonner'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs'
 import { useAuth } from './hooks/useAuth'
 import { useOnline } from './hooks/useOnline'
 import { useTheme } from './hooks/useTheme'
@@ -24,6 +25,14 @@ import { deleteCloud } from './lib/storage'
 
 const BANNER_KEY = 'dpdc-bill-check:sync-banner-dismissed'
 
+const TABS = ['check', 'history', 'gold'] as const
+type Tab = (typeof TABS)[number]
+/** The open tab lives in the URL hash, so reloads and shared links keep it; #check is also the skip-link target. */
+const tabFromHash = (): Tab => {
+  const hash = window.location.hash.slice(1)
+  return (TABS as readonly string[]).includes(hash) ? (hash as Tab) : 'check'
+}
+
 export default function App() {
   const { t } = useI18n()
   const toast = useToast()
@@ -31,6 +40,18 @@ export default function App() {
   const { theme, resolved, cycle } = useTheme()
   const auth = useAuth()
   const [authOpen, setAuthOpen] = useState(false)
+  const [tab, setTab] = useState<Tab>(tabFromHash)
+
+  useEffect(() => {
+    const onHash = () => setTab(tabFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
+
+  function selectTab(next: Tab) {
+    setTab(next)
+    window.history.replaceState(null, '', `#${next}`)
+  }
   const [bannerDismissed, setBannerDismissed] = useState(() => {
     try {
       return localStorage.getItem(BANNER_KEY) === '1'
@@ -103,64 +124,85 @@ export default function App() {
         {/* The page's main heading stays for screen readers and search engines, hidden from view. */}
         <h1 className="sr-only">{t('tagline')}</h1>
 
-        <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
-          <div className="grid gap-5">
-            {ready ? (
-              <CheckBillCard key={auth.state.user?.uid ?? 'guest'} data={data} update={update} />
-            ) : (
-              <Skeleton className="h-[420px] rounded-xl" aria-busy="true" />
-            )}
-            <p className="-mt-1 flex items-start gap-2 px-1 text-xs leading-relaxed text-muted-foreground">
-              <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />
-              <span>{t('whyCaptcha')}</span>
-            </p>
-            <GoldCard />
+        <Tabs value={tab} onValueChange={(v) => selectTab(v as Tab)}>
+          <div className="pointer-events-none sticky top-14 z-30 py-2">
+            <TabsList aria-label={t('tabsLabel')} className="pointer-events-auto mx-auto flex max-w-md border shadow-sm">
+              <TabsTrigger value="check">
+                <Zap /> {t('tabCheck')}
+              </TabsTrigger>
+              <TabsTrigger value="history">
+                <ChartColumn /> {t('tabBills')}
+              </TabsTrigger>
+              <TabsTrigger value="gold">
+                <Coins /> {t('tabGold')}
+              </TabsTrigger>
+            </TabsList>
           </div>
 
-          <div className="grid gap-5">
-            {showBanner && (
-              <Alert variant="info" className="relative pr-10">
-                <Cloud />
-                <AlertTitle>{t('syncBannerTitle')}</AlertTitle>
-                <AlertDescription>
-                  <p>{t('syncBannerBody')}</p>
-                  <Button size="sm" className="mt-2 w-fit" onClick={() => setAuthOpen(true)}>
-                    {t('signIn')}
-                  </Button>
-                </AlertDescription>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="absolute top-2 right-2"
-                  aria-label={t('close')}
-                  onClick={() => {
-                    setBannerDismissed(true)
-                    try {
-                      localStorage.setItem(BANNER_KEY, '1')
-                    } catch {
-                      /* ignore */
-                    }
-                  }}
-                >
-                  <X />
-                </Button>
-              </Alert>
-            )}
-            {ready && (
-              <>
-                <AccountsCard data={data} update={update} />
-                <HistoryCard data={data} update={update} />
-              </>
-            )}
-            <ReminderCard />
-          </div>
-        </div>
+          <TabsContent value="check">
+            <div className="grid items-start gap-5 lg:grid-cols-[minmax(0,1.45fr)_minmax(0,1fr)]">
+              <div className="grid gap-5">
+                {ready ? (
+                  <CheckBillCard key={auth.state.user?.uid ?? 'guest'} data={data} update={update} />
+                ) : (
+                  <Skeleton className="h-[420px] rounded-xl" aria-busy="true" />
+                )}
+                <p className="-mt-1 flex items-start gap-2 px-1 text-xs leading-relaxed text-muted-foreground">
+                  <ShieldCheck className="mt-0.5 size-4 shrink-0 text-success" />
+                  <span>{t('whyCaptcha')}</span>
+                </p>
+              </div>
 
-        {ready && (
-          <div className="mt-5">
-            <BillHistoryCard data={data} update={update} />
-          </div>
-        )}
+              <div className="grid gap-5">
+                {showBanner && (
+                  <Alert variant="info" className="relative pr-10">
+                    <Cloud />
+                    <AlertTitle>{t('syncBannerTitle')}</AlertTitle>
+                    <AlertDescription>
+                      <p>{t('syncBannerBody')}</p>
+                      <Button size="sm" className="mt-2 w-fit" onClick={() => setAuthOpen(true)}>
+                        {t('signIn')}
+                      </Button>
+                    </AlertDescription>
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      className="absolute top-2 right-2"
+                      aria-label={t('close')}
+                      onClick={() => {
+                        setBannerDismissed(true)
+                        try {
+                          localStorage.setItem(BANNER_KEY, '1')
+                        } catch {
+                          /* ignore */
+                        }
+                      }}
+                    >
+                      <X />
+                    </Button>
+                  </Alert>
+                )}
+                {ready && (
+                  <>
+                    <AccountsCard data={data} update={update} />
+                    <HistoryCard data={data} update={update} />
+                  </>
+                )}
+                <ReminderCard />
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="history">
+            {ready ? <BillHistoryCard data={data} update={update} /> : <Skeleton className="h-[420px] rounded-xl" aria-busy="true" />}
+          </TabsContent>
+
+          <TabsContent value="gold">
+            <div className="mx-auto max-w-2xl">
+              <GoldCard />
+            </div>
+          </TabsContent>
+        </Tabs>
       </main>
 
       <footer className="border-t">

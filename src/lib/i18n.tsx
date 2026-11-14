@@ -22,6 +22,13 @@ const en = {
   deleteCloudConfirm: 'Delete all saved numbers and history from your account? This cannot be undone.',
   cloudDeleted: 'Your saved data was deleted',
 
+  // tabs
+  tabsLabel: 'Sections',
+  tabCheck: 'Check bill',
+  tabBills: 'History',
+  tabGold: 'Gold',
+  moreActions: 'More actions',
+
   // check form
   checkTitle: 'Check a bill',
   customerNo: 'Customer number',
@@ -235,6 +242,12 @@ const bn: Record<MessageKey, string> = {
   deleteCloudData: 'আমার সংরক্ষিত তথ্য মুছুন',
   deleteCloudConfirm: 'আপনার অ্যাকাউন্ট থেকে সব সংরক্ষিত নম্বর ও ইতিহাস মুছে ফেলবেন? এটি আর ফেরানো যাবে না।',
   cloudDeleted: 'আপনার সংরক্ষিত তথ্য মুছে ফেলা হয়েছে',
+
+  tabsLabel: 'বিভাগ',
+  tabCheck: 'বিল দেখুন',
+  tabBills: 'ইতিহাস',
+  tabGold: 'সোনা',
+  moreActions: 'আরও অপশন',
 
   checkTitle: 'বিল দেখুন',
   customerNo: 'কাস্টমার নম্বর',

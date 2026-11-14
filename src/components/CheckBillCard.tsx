@@ -176,7 +176,7 @@ export function CheckBillCard({
     <Card
       id="check"
       aria-labelledby="check-title"
-      className="relative scroll-mt-20 gap-5 overflow-hidden border-primary/15 p-5 shadow-md sm:p-6"
+      className="relative scroll-mt-32 gap-5 overflow-hidden border-primary/15 p-5 shadow-md sm:p-6"
     >
       <div className="pointer-events-none absolute inset-x-0 top-0 h-1 bg-linear-to-r from-primary via-primary/70 to-gold" aria-hidden="true" />
       <CardHeader>

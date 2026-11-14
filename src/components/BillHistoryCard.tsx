@@ -1,4 +1,4 @@
-import { Check, Lock, Pencil, Plus, ShieldCheck, Trash2, Upload } from 'lucide-react'
+import { Check, Ellipsis, Lock, Pencil, Plus, ShieldCheck, Trash2, Upload } from 'lucide-react'
 import { useMemo, useRef, useState, type DragEvent } from 'react'
 import { useI18n } from '../lib/i18n'
 import { accountLabel } from '../lib/labels'
@@ -23,6 +23,7 @@ import { useToast } from './Toast'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { Card, CardHeader, CardTitle } from './ui/card'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table'
 import { ToggleGroup, ToggleGroupItem } from './ui/toggle-group'
 
@@ -221,7 +222,7 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
             </p>
           )}
 
-          <Table className="tabular">
+          <Table className="tabular max-sm:[&_td]:px-1.5 max-sm:[&_th]:px-1.5 max-sm:[&_thead_th]:whitespace-normal max-sm:[&_thead_th]:leading-tight">
             <TableHeader>
               <TableRow className="hover:bg-transparent">
                 <TableHead scope="col">{t('billMonth')}</TableHead>
@@ -252,7 +253,7 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                 const period = formatPeriod(b.year, b.month)
                 return (
                   <TableRow key={b.id} className={cn('group', status === 'paid' && 'text-muted-foreground')}>
-                    <th scope="row" className="p-2 text-left font-medium text-foreground">
+                    <th scope="row" className="p-2 text-left font-medium whitespace-nowrap text-foreground">
                       <span className="hidden sm:inline">{formatPeriod(b.year, b.month)}</span>
                       <span className="sm:hidden">{shortPeriod(b)}</span>
                     </th>
@@ -287,7 +288,32 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                           <span className="sr-only">{t('paidLockedNote')}</span>
                         </span>
                       ) : (
-                        <div className="flex justify-end gap-0.5">
+                        <>
+                        {/* Phones: one menu so the table fits; wider screens: the three buttons. */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon-sm"
+                              className="text-muted-foreground sm:hidden"
+                              aria-label={`${t('moreActions')}: ${period}`}
+                            >
+                              <Ellipsis />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="min-w-[10rem]">
+                            <DropdownMenuItem onSelect={() => setPaying(b)}>
+                              <Check className="text-success" /> {t('markPaid')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onSelect={() => setRequest({ edit: b })}>
+                              <Pencil /> {t('editBill')}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem variant="destructive" onSelect={() => remove(b)}>
+                              <Trash2 /> {t('deleteBill')}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                        <div className="hidden justify-end gap-0.5 sm:flex">
                           <Button
                             variant="ghost"
                             size="icon-sm"
@@ -319,6 +345,7 @@ export function BillHistoryCard({ data, update }: { data: UserData; update: Upda
                             <Trash2 />
                           </Button>
                         </div>
+                        </>
                       )}
                     </TableCell>
                   </TableRow>
