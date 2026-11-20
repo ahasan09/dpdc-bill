@@ -2,15 +2,15 @@
   "prices": [
     {
       "karat": 22,
-      "perGram": 18655,
-      "perVori": 217592
+      "perGram": 17245,
+      "perVori": 201146
     },
     {
       "karat": 21,
-      "perGram": 17815,
-      "perVori": 207794
+      "perGram": 16470,
+      "perVori": 192106
     }
   ],
-  "since": "2026-11-14T13:15:34.667Z",
+  "since": "2026-11-20T18:24:15.957Z",
   "source": "https://www.bajus.org/gold-price"
 }
